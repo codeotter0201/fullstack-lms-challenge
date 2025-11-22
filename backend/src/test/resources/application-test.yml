@@ -1,0 +1,29 @@
+# Test Environment Configuration
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  h2:
+    console:
+      enabled: false
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.H2Dialect
+
+jwt:
+  secret: test-secret-key-must-be-at-least-256-bits-long-for-HS256-algorithm-security-testing
+  expiration: 3600000
+
+logging:
+  level:
+    root: WARN
+    com.waterball.lms: INFO
