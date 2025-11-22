@@ -1,0 +1,148 @@
+/**
+ * VerticalSidebar 左側垂直側邊欄
+ *
+ * 符合目標網站設計：
+ * - 寬度：230px
+ * - 背景：#171923（與 body 相同）
+ * - 分組導航（主導航、排行榜、旅程相關）
+ * - 金色高亮選中項目
+ */
+
+'use client'
+
+import { usePathname } from 'next/navigation'
+import Link from 'next/link'
+import Image from 'next/image'
+import {
+  House,              // 首頁（替換 Home）
+  LayoutDashboard,    // 課程（替換 BookOpen）
+  UserRoundPen,       // 個人檔案（替換 User）
+  Trophy,             // 排行榜
+  Gift,               // 獎勵任務（替換 Award）
+  SquareChartGantt,   // 挑戰歷程（替換 TrendingUp）
+  Album,              // 所有單元（替換 List）
+  Map,                // 挑戰地圖
+  BookText,           // SOP 寶典
+} from 'lucide-react'
+import { cn } from '@/lib/utils'
+import { useAuth } from '@/contexts/AuthContext'
+
+// 導航項目分組 - 完全符合目標網站的 3 組結構和圖示
+const navGroups = [
+  {
+    title: '核心功能',
+    items: [
+      {
+        label: '首頁',
+        href: '/',
+        icon: House,  // 使用 House 替換 Home
+      },
+      {
+        label: '課程',
+        href: '/courses',
+        icon: LayoutDashboard,  // 使用 LayoutDashboard 替換 BookOpen
+      },
+      {
+        label: '個人檔案',
+        href: '/users/me/profile',
+        icon: UserRoundPen,  // 使用 UserRoundPen 替換 User
+      },
+    ],
+  },
+  {
+    title: '社群功能',
+    items: [
+      {
+        label: '排行榜',
+        href: '/leaderboard',
+        icon: Trophy,
+      },
+      {
+        label: '獎勵任務',
+        href: '/journeys/software-design-pattern/missions',  // 修正路徑
+        icon: Gift,  // 使用 Gift 替換 Award
+      },
+      {
+        label: '挑戰歷程',
+        href: '/users/me/portfolio',
+        icon: SquareChartGantt,  // 使用 SquareChartGantt 替換 TrendingUp
+      },
+    ],
+  },
+  {
+    title: '課程相關',
+    items: [
+      {
+        label: '所有單元',
+        href: '/journeys/software-design-pattern',  // 修正路徑
+        icon: Album,  // 使用 Album 替換 List
+      },
+      {
+        label: '挑戰地圖',
+        href: '/journeys/software-design-pattern/roadmap',  // 修正路徑
+        icon: Map,
+      },
+      {
+        label: 'SOP 寶典',
+        href: '/journeys/software-design-pattern/sop',  // 修正路徑
+        icon: BookText,
+      },
+    ],
+  },
+]
+
+export default function VerticalSidebar() {
+  const pathname = usePathname()
+  const { user } = useAuth()
+
+  return (
+    <aside className="w-[235px] h-full bg-[#1A1D2E] flex flex-col p-4">
+      {/* Logo 區域 */}
+      <div className="h-16 flex items-center mb-6">
+        <Link href="/">
+          <Image
+            src="/world/logo.png"
+            alt="水球軟體學院"
+            width={235}
+            height={64}
+            className="object-contain"
+            priority
+          />
+        </Link>
+      </div>
+
+      {/* 主導航區域 - 分組顯示 */}
+      <nav className="flex-1 space-y-6 overflow-y-auto scrollbar-thin">
+        {navGroups.map((group, groupIndex) => (
+          <div key={groupIndex}>
+            {/* 分組項目 */}
+            <div className="space-y-1">
+              {group.items.map((item) => {
+                const isActive = pathname === item.href
+                const Icon = item.icon
+
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={cn(
+                      'flex items-center gap-3 px-2.5 py-3 rounded-[20px]',
+                      'text-sm transition-colors duration-200',
+                      isActive
+                        ? 'bg-[#FFD700] text-[rgb(23,25,35)] font-medium'
+                        : 'text-[rgb(244,244,245)] hover:bg-[#FFD700] hover:text-[rgb(23,25,35)]'
+                    )}
+                  >
+                    <Icon className="w-6 h-6 flex-shrink-0" strokeWidth={2} />
+                    {item.label}
+                  </Link>
+                )
+              })}
+            </div>
+          </div>
+        ))}
+      </nav>
+
+    </aside>
+  )
+}

@@ -1,0 +1,363 @@
+{
+  "body": {
+    "tag": "body",
+    "classes": [
+      "font-sans"
+    ],
+    "id": null,
+    "text": null,
+    "styles": {
+      "backgroundColor": "rgb(15, 20, 25)",
+      "color": "rgb(243, 244, 246)",
+      "display": "block",
+      "position": "static"
+    },
+    "children": [
+      {
+        "tag": "div",
+        "classes": [
+          "min-h-screen",
+          "flex",
+          "flex-col",
+          "bg-background"
+        ],
+        "id": null,
+        "text": null,
+        "styles": {
+          "backgroundColor": "rgb(15, 20, 25)",
+          "color": "rgb(243, 244, 246)",
+          "display": "flex",
+          "position": "static"
+        },
+        "children": [
+          {
+            "tag": "div",
+            "classes": [
+              "hidden",
+              "lg:block"
+            ],
+            "id": null,
+            "text": null,
+            "styles": {
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "color": "rgb(243, 244, 246)",
+              "display": "block",
+              "position": "static"
+            },
+            "children": [
+              {
+                "tag": "aside",
+                "classes": [
+                  "fixed",
+                  "left-0",
+                  "top-0",
+                  "bottom-0",
+                  "w-[280px]",
+                  "bg-[#1A1D2E]",
+                  "flex",
+                  "flex-col",
+                  "z-fixed",
+                  "p-6"
+                ],
+                "id": null,
+                "text": null,
+                "styles": {
+                  "backgroundColor": "rgb(26, 29, 46)",
+                  "color": "rgb(243, 244, 246)",
+                  "display": "flex",
+                  "position": "fixed"
+                },
+                "children": []
+              }
+            ]
+          },
+          {
+            "tag": "div",
+            "classes": [
+              "fixed",
+              "inset-0",
+              "bg-black/50",
+              "z-modal-backdrop",
+              "transition-opacity",
+              "duration-300",
+              "opacity-0",
+              "pointer-events-none"
+            ],
+            "id": null,
+            "text": null,
+            "styles": {
+              "backgroundColor": "rgba(0, 0, 0, 0.5)",
+              "color": "rgb(243, 244, 246)",
+              "display": "block",
+              "position": "fixed"
+            },
+            "children": []
+          },
+          {
+            "tag": "aside",
+            "classes": [
+              "fixed",
+              "left-0",
+              "top-0",
+              "bottom-0",
+              "w-72",
+              "bg-background-tertiary",
+              "border-r",
+              "border-border",
+              "flex",
+              "flex-col",
+              "z-modal",
+              "transition-transform",
+              "duration-300",
+              "ease-in-out",
+              "-translate-x-full"
+            ],
+            "id": null,
+            "text": null,
+            "styles": {
+              "backgroundColor": "rgb(30, 35, 48)",
+              "color": "rgb(243, 244, 246)",
+              "display": "flex",
+              "position": "fixed"
+            },
+            "children": [
+              {
+                "tag": "div",
+                "classes": [
+                  "h-16",
+                  "flex",
+                  "items-center",
+                  "justify-between",
+                  "px-4",
+                  "border-b",
+                  "border-border"
+                ],
+                "id": null,
+                "text": null,
+                "styles": {
+                  "backgroundColor": "rgba(0, 0, 0, 0)",
+                  "color": "rgb(243, 244, 246)",
+                  "display": "flex",
+                  "position": "static"
+                },
+                "children": []
+              },
+              {
+                "tag": "nav",
+                "classes": [
+                  "flex-1",
+                  "px-3",
+                  "py-4",
+                  "space-y-1",
+                  "overflow-y-auto",
+                  "scrollbar-thin"
+                ],
+                "id": null,
+                "text": null,
+                "styles": {
+                  "backgroundColor": "rgba(0, 0, 0, 0)",
+                  "color": "rgb(243, 244, 246)",
+                  "display": "block",
+                  "position": "static"
+                },
+                "children": []
+              },
+              {
+                "tag": "div",
+                "classes": [
+                  "border-t",
+                  "border-border",
+                  "p-4"
+                ],
+                "id": null,
+                "text": null,
+                "styles": {
+                  "backgroundColor": "rgba(0, 0, 0, 0)",
+                  "color": "rgb(243, 244, 246)",
+                  "display": "block",
+                  "position": "static"
+                },
+                "children": []
+              }
+            ]
+          },
+          {
+            "tag": "div",
+            "classes": [
+              "flex-1",
+              "flex",
+              "flex-col",
+              "lg:ml-[280px]"
+            ],
+            "id": null,
+            "text": null,
+            "styles": {
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "color": "rgb(243, 244, 246)",
+              "display": "flex",
+              "position": "static"
+            },
+            "children": [
+              {
+                "tag": "div",
+                "classes": [
+                  "lg:hidden",
+                  "fixed",
+                  "top-4",
+                  "left-4",
+                  "z-50"
+                ],
+                "id": null,
+                "text": null,
+                "styles": {
+                  "backgroundColor": "rgba(0, 0, 0, 0)",
+                  "color": "rgb(243, 244, 246)",
+                  "display": "none",
+                  "position": "fixed"
+                },
+                "children": []
+              },
+              {
+                "tag": "main",
+                "classes": [
+                  "flex-1",
+                  "px-6",
+                  "py-6"
+                ],
+                "id": null,
+                "text": null,
+                "styles": {
+                  "backgroundColor": "rgba(0, 0, 0, 0)",
+                  "color": "rgb(243, 244, 246)",
+                  "display": "block",
+                  "position": "static"
+                },
+                "children": []
+              },
+              {
+                "tag": "footer",
+                "classes": [
+                  "bg-background-secondary",
+                  "border-t",
+                  "border-border"
+                ],
+                "id": null,
+                "text": null,
+                "styles": {
+                  "backgroundColor": "rgb(26, 29, 46)",
+                  "color": "rgb(243, 244, 246)",
+                  "display": "block",
+                  "position": "static"
+                },
+                "children": []
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "tag": "div",
+        "classes": [
+          "fixed",
+          "top-4",
+          "right-4",
+          "z-[9999]",
+          "space-y-3",
+          "pointer-events-none"
+        ],
+        "id": null,
+        "text": null,
+        "styles": {
+          "backgroundColor": "rgba(0, 0, 0, 0)",
+          "color": "rgb(243, 244, 246)",
+          "display": "block",
+          "position": "fixed"
+        },
+        "children": []
+      },
+      {
+        "tag": "script",
+        "classes": [],
+        "id": null,
+        "text": null,
+        "styles": {
+          "backgroundColor": "rgba(0, 0, 0, 0)",
+          "color": "rgb(243, 244, 246)",
+          "display": "none",
+          "position": "static"
+        },
+        "children": []
+      },
+      {
+        "tag": "script",
+        "classes": [],
+        "id": null,
+        "text": "(self.__next_f=self.__next_f||[]).push([0]);self._",
+        "styles": {
+          "backgroundColor": "rgba(0, 0, 0, 0)",
+          "color": "rgb(243, 244, 246)",
+          "display": "none",
+          "position": "static"
+        },
+        "children": []
+      },
+      {
+        "tag": "script",
+        "classes": [],
+        "id": null,
+        "text": "self.__next_f.push([1,\"1:HL[\\\"/_next/static/media/",
+        "styles": {
+          "backgroundColor": "rgba(0, 0, 0, 0)",
+          "color": "rgb(243, 244, 246)",
+          "display": "none",
+          "position": "static"
+        },
+        "children": []
+      },
+      {
+        "tag": "script",
+        "classes": [],
+        "id": null,
+        "text": "self.__next_f.push([1,\"4:I[\\\"(app-pages-browser)/.",
+        "styles": {
+          "backgroundColor": "rgba(0, 0, 0, 0)",
+          "color": "rgb(243, 244, 246)",
+          "display": "none",
+          "position": "static"
+        },
+        "children": []
+      },
+      {
+        "tag": "script",
+        "classes": [],
+        "id": null,
+        "text": "self.__next_f.push([1,\":[\\\"$\\\",\\\"h2\\\",null,{\\\"styl",
+        "styles": {
+          "backgroundColor": "rgba(0, 0, 0, 0)",
+          "color": "rgb(243, 244, 246)",
+          "display": "none",
+          "position": "static"
+        },
+        "children": []
+      },
+      {
+        "tag": "script",
+        "classes": [],
+        "id": null,
+        "text": "self.__next_f.push([1,\"e:[[\\\"$\\\",\\\"meta\\\",\\\"0\\\",{\\",
+        "styles": {
+          "backgroundColor": "rgba(0, 0, 0, 0)",
+          "color": "rgb(243, 244, 246)",
+          "display": "none",
+          "position": "static"
+        },
+        "children": []
+      }
+    ]
+  },
+  "title": "Waterball 學院 - 軟體工程師培訓平台",
+  "viewport": {
+    "width": 1920,
+    "height": 1080
+  }
+}
