@@ -25,7 +25,7 @@ services:
   # Traefik - Reverse Proxy
   # ---------------------------------------------------------------------------
   traefik:
-    image: traefik:v3.0
+    image: traefik:v3.2
     container_name: waterball-lms-traefik
     command:
       # Provider configuration
