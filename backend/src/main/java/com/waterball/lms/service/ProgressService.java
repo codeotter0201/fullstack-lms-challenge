@@ -23,6 +23,7 @@ public class ProgressService {
     private final LessonRepository lessonRepository;
     private final UserRepository userRepository;
     private final ExperienceService experienceService;
+    private final PurchaseService purchaseService;
 
     @Transactional
     public Map<String, Object> updateProgress(String userEmail, ProgressUpdateRequest request) {
@@ -32,9 +33,9 @@ public class ProgressService {
         Lesson lesson = lessonRepository.findById(request.getLessonId())
                 .orElseThrow(() -> new IllegalArgumentException("Lesson not found"));
 
-        // 檢查權限
-        if (lesson.getCourse().getIsPremium() && !user.getIsPremium()) {
-            throw new IllegalArgumentException("Premium lesson requires subscription");
+        // Check access: free course OR purchased
+        if (!purchaseService.hasAccess(user.getId(), lesson.getCourse().getId())) {
+            throw new IllegalArgumentException("Course requires purchase");
         }
 
         // 查詢或建立進度

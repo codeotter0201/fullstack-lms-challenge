@@ -19,10 +19,10 @@
 | password | VARCHAR(255) | NOT NULL | 加密後的密碼 (BCrypt) |
 | display_name | VARCHAR(100) | | 顯示名稱 |
 | avatar_url | VARCHAR(500) | | 頭像 URL |
-| role | VARCHAR(20) | NOT NULL | 角色: STUDENT, ADMIN |
+| role | VARCHAR(20) | NOT NULL | 角色: STUDENT, ADMIN (已棄用,請使用 user_roles 表) |
 | level | INTEGER | NOT NULL, DEFAULT 1 | 用戶等級 |
 | experience | INTEGER | NOT NULL, DEFAULT 0 | 經驗值 |
-| is_premium | BOOLEAN | NOT NULL, DEFAULT false | 是否為付費會員 |
+| is_premium | BOOLEAN | NOT NULL, DEFAULT false | 是否為付費會員 (已棄用,請使用 user_roles 表) |
 | created_at | TIMESTAMP | NOT NULL | 創建時間 |
 | updated_at | TIMESTAMP | NOT NULL | 更新時間 |
 
@@ -47,6 +47,7 @@
 | description | TEXT | | 課程描述 |
 | thumbnail_url | VARCHAR(500) | | 縮圖 URL |
 | is_premium | BOOLEAN | NOT NULL, DEFAULT false | 是否為付費課程 |
+| price | DECIMAL(10,2) | NOT NULL, DEFAULT 0 | 課程價格 (TWD) |
 | is_published | BOOLEAN | NOT NULL, DEFAULT true | 是否已發布 |
 | display_order | INTEGER | NOT NULL, DEFAULT 0 | 顯示順序 |
 | created_at | TIMESTAMP | NOT NULL | 創建時間 |
@@ -57,9 +58,84 @@
 - `idx_courses_display_order` ON (display_order)
 
 **業務規則:**
-- 免費用戶只能看到 `is_premium = false` 的課程
-- 付費用戶可以看到所有課程
+- 所有用戶都可以看到已發布的課程
+- 付費課程 (`is_premium = true`) 需要購買後才能存取內容
+- 免費課程 (`price = 0`) 所有用戶都可以存取
 - 只顯示 `is_published = true` 的課程
+
+---
+
+### user_roles (用戶角色表)
+
+用戶角色管理，支援一個用戶擁有多個角色
+
+| 欄位名 | 類型 | 約束 | 說明 |
+|--------|------|------|------|
+| id | BIGINT | PK, AUTO_INCREMENT | 角色分配 ID |
+| user_id | BIGINT | NOT NULL, FK → users | 用戶 ID |
+| role | VARCHAR(20) | NOT NULL | 角色類型: FREE, PAID, ADMIN, TEACHER |
+| granted_at | TIMESTAMP | NOT NULL | 角色授予時間 |
+| created_at | TIMESTAMP | NOT NULL | 創建時間 |
+| updated_at | TIMESTAMP | NOT NULL | 更新時間 |
+
+**索引:**
+- `idx_user_roles_user_id` ON (user_id)
+
+**外鍵:**
+- `fk_user_roles_user` FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+
+**唯一約束:**
+- `uq_user_role` UNIQUE (user_id, role) - 防止重複分配相同角色
+
+**檢查約束:**
+- `chk_role` CHECK (role IN ('FREE', 'PAID', 'ADMIN', 'TEACHER'))
+
+**業務規則:**
+- 一個用戶可以擁有多個角色 (例如: FREE + TEACHER)
+- 不能重複分配相同的角色給同一用戶
+- 新用戶預設獲得 FREE 角色
+- 角色不會自動升級,需由管理員手動分配
+
+---
+
+### course_purchases (課程購買記錄表)
+
+記錄用戶的課程購買歷史
+
+| 欄位名 | 類型 | 約束 | 說明 |
+|--------|------|------|------|
+| id | BIGINT | PK, AUTO_INCREMENT | 購買記錄 ID |
+| user_id | BIGINT | NOT NULL, FK → users | 購買用戶 ID |
+| course_id | BIGINT | NOT NULL, FK → courses | 購買課程 ID |
+| purchase_price | DECIMAL(10,2) | NOT NULL | 購買時的價格 (TWD) |
+| purchase_date | TIMESTAMP | NOT NULL | 購買時間 |
+| payment_status | VARCHAR(20) | NOT NULL, DEFAULT 'COMPLETED' | 付款狀態 |
+| transaction_id | VARCHAR(100) | | 交易 ID |
+| created_at | TIMESTAMP | NOT NULL | 創建時間 |
+| updated_at | TIMESTAMP | NOT NULL | 更新時間 |
+
+**索引:**
+- `idx_purchases_user_id` ON (user_id)
+- `idx_purchases_course_id` ON (course_id)
+- `idx_purchases_date` ON (purchase_date DESC)
+- `idx_purchases_status` ON (payment_status)
+
+**外鍵:**
+- `fk_purchases_user` FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+- `fk_purchases_course` FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
+
+**唯一約束:**
+- `uq_user_course_purchase` UNIQUE (user_id, course_id) - 防止重複購買
+
+**檢查約束:**
+- `chk_payment_status` CHECK (payment_status IN ('PENDING', 'COMPLETED', 'FAILED', 'REFUNDED'))
+- `chk_purchase_price` CHECK (purchase_price >= 0)
+
+**業務規則:**
+- 一個用戶只能購買同一課程一次
+- purchase_price 記錄購買時的價格,可能與當前課程價格不同
+- 目前為 MVP,所有購買都是模擬付款 (payment_status = 'COMPLETED')
+- transaction_id 格式: MOCK-{UUID}
 
 ---
 

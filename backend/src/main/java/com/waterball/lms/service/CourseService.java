@@ -26,20 +26,16 @@ public class CourseService {
     private final LessonRepository lessonRepository;
     private final ProgressRepository progressRepository;
     private final UserRepository userRepository;
+    private final PurchaseService purchaseService;
 
     @Transactional(readOnly = true)
     public List<CourseDTO> getAllCourses(String userEmail) {
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
-        List<Course> courses;
-        if (user.getIsPremium()) {
-            // 付費用戶可以看到所有課程
-            courses = courseRepository.findAllByIsPublishedTrueOrderByDisplayOrderAsc();
-        } else {
-            // 免費用戶只能看到免費課程
-            courses = courseRepository.findAllByIsPremiumAndIsPublishedTrueOrderByDisplayOrderAsc(false);
-        }
+        // All users can see all published courses
+        // Access control is checked when viewing course details
+        List<Course> courses = courseRepository.findAllByIsPublishedTrueOrderByDisplayOrderAsc();
 
         return courses.stream()
                 .map(CourseDTO::from)
@@ -54,9 +50,9 @@ public class CourseService {
         Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> new IllegalArgumentException("Course not found"));
 
-        // 檢查權限
-        if (course.getIsPremium() && !user.getIsPremium()) {
-            throw new IllegalArgumentException("Premium course requires subscription");
+        // Check access: free course OR purchased
+        if (!purchaseService.hasAccess(user.getId(), courseId)) {
+            throw new IllegalArgumentException("Course requires purchase");
         }
 
         return CourseDTO.from(course);
@@ -70,9 +66,9 @@ public class CourseService {
         Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> new IllegalArgumentException("Course not found"));
 
-        // 檢查權限
-        if (course.getIsPremium() && !user.getIsPremium()) {
-            throw new IllegalArgumentException("Premium course requires subscription");
+        // Check access: free course OR purchased
+        if (!purchaseService.hasAccess(user.getId(), courseId)) {
+            throw new IllegalArgumentException("Course requires purchase");
         }
 
         List<Lesson> lessons = lessonRepository.findByCourseIdAndIsPublishedTrueOrderByDisplayOrderAsc(courseId);
@@ -112,9 +108,9 @@ public class CourseService {
 
         Course course = lesson.getCourse();
 
-        // 檢查權限
-        if (course.getIsPremium() && !user.getIsPremium()) {
-            throw new IllegalArgumentException("Premium lesson requires subscription");
+        // Check access: free course OR purchased
+        if (!purchaseService.hasAccess(user.getId(), course.getId())) {
+            throw new IllegalArgumentException("Course requires purchase");
         }
 
         LessonDTO dto = LessonDTO.from(lesson);

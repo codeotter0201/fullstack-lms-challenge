@@ -471,3 +471,220 @@ public class ResourceService {
     }
 }
 ```
+
+---
+
+## 購買 API (需要認證)
+
+### POST /api/purchases/courses/{courseId}
+購買指定課程 (MVP: 模擬付款)
+
+**需要權限:** 已登入用戶
+
+**Path Parameters:**
+- `courseId` (Long, required) - 課程 ID
+
+**Request Body:**
+```json
+{}
+```
+*註: MVP 版本不需要任何參數,未來可擴充支付方式、優惠碼等*
+
+**Response (200 OK):**
+```json
+{
+  "id": 1,
+  "userId": 123,
+  "courseId": 456,
+  "courseTitle": "Java 入門課程",
+  "purchasePrice": 2990.00,
+  "purchaseDate": "2025-11-23T14:30:00",
+  "paymentStatus": "COMPLETED",
+  "transactionId": "MOCK-a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+}
+```
+
+**Error Responses:**
+- `400 Bad Request` - 課程不存在或嘗試購買免費課程
+  ```json
+  {
+    "timestamp": "2025-11-23T14:30:00",
+    "status": 400,
+    "error": "Bad Request",
+    "message": "Cannot purchase free course",
+    "path": "/api/purchases/courses/1"
+  }
+  ```
+
+- `409 Conflict` - 重複購買
+  ```json
+  {
+    "timestamp": "2025-11-23T14:30:00",
+    "status": 409,
+    "error": "Conflict",
+    "message": "Course already purchased",
+    "path": "/api/purchases/courses/1"
+  }
+  ```
+
+**業務規則:**
+- 只能購買 `isPremium = true` 的付費課程
+- 每個用戶只能購買同一課程一次
+- 購買成功後立即獲得課程存取權限
+- 購買不會自動升級用戶角色 (需管理員手動分配 PAID 角色)
+- 交易 ID 格式: `MOCK-{UUID}`
+
+---
+
+### GET /api/purchases/my-purchases
+取得當前用戶的所有購買記錄
+
+**需要權限:** 已登入用戶
+
+**Response (200 OK):**
+```json
+[
+  {
+    "id": 1,
+    "userId": 123,
+    "courseId": 456,
+    "courseTitle": "Java 入門課程",
+    "purchasePrice": 2990.00,
+    "purchaseDate": "2025-11-22T10:00:00",
+    "paymentStatus": "COMPLETED",
+    "transactionId": "MOCK-xxx-123"
+  },
+  {
+    "id": 2,
+    "userId": 123,
+    "courseId": 789,
+    "courseTitle": "Spring Boot 實戰",
+    "purchasePrice": 3990.00,
+    "purchaseDate": "2025-11-23T14:00:00",
+    "paymentStatus": "COMPLETED",
+    "transactionId": "MOCK-xxx-456"
+  }
+]
+```
+
+**說明:**
+- 按購買時間倒序排列
+- 包含完整的課程資訊和購買詳情
+
+---
+
+### GET /api/purchases/check/{courseId}
+檢查當前用戶是否已購買指定課程
+
+**需要權限:** 已登入用戶
+
+**Path Parameters:**
+- `courseId` (Long, required) - 課程 ID
+
+**Response (200 OK):**
+```json
+{
+  "purchased": true
+}
+```
+
+**用途:**
+- 前端顯示「購買課程」或「開始學習」按鈕
+- 避免重複購買嘗試
+
+---
+
+### GET /api/purchases/access/{courseId}
+檢查當前用戶是否可存取指定課程
+
+**需要權限:** 已登入用戶
+
+**Path Parameters:**
+- `courseId` (Long, required) - 課程 ID
+
+**Response (200 OK):**
+```json
+{
+  "hasAccess": true
+}
+```
+
+**存取規則:**
+- 免費課程 (`isPremium = false`): 所有用戶都可存取
+- 付費課程 (`isPremium = true`): 需已購買該課程
+
+**用途:**
+- 前端控制課程內容顯示
+- 防止未授權存取
+
+---
+
+## 購買流程整體架構
+
+### 存取控制邏輯
+
+```
+用戶存取課程
+    ↓
+免費課程? ──Yes──→ 允許存取
+    ↓ No
+已購買? ──Yes──→ 允許存取
+    ↓ No
+拒絕存取 (顯示購買按鈕)
+```
+
+### 購買流程
+
+```
+1. 用戶點擊「購買課程」
+    ↓
+2. 前端呼叫 POST /api/purchases/courses/{id}
+    ↓
+3. 後端檢查:
+   - 課程是否為付費課程?
+   - 是否已購買? (防重複)
+    ↓
+4. 建立購買記錄 (模擬付款成功)
+    ↓
+5. 回傳購買憑證
+    ↓
+6. 前端顯示成功訊息
+    ↓
+7. 用戶可立即存取課程內容
+```
+
+### 與角色系統的關係
+
+- **購買記錄** (`course_purchases`) 和 **用戶角色** (`user_roles`) 是**分離的**
+- 購買課程 **不會自動** 升級用戶角色
+- 用戶角色由管理員手動管理:
+  - `FREE` - 預設角色,可購買單門課程
+  - `PAID` - 付費會員,由管理員分配
+  - `ADMIN` - 管理員
+  - `TEACHER` - 講師
+
+### 未來擴充方向
+
+MVP 版本使用模擬付款,未來可擴充:
+
+1. **真實金流整合**
+   - 串接第三方支付 (綠界、藍新、Stripe 等)
+   - 支援信用卡、ATM 轉帳、超商代碼
+
+2. **訂閱制度**
+   - 月費/年費吃到飽方案
+   - 自動續費機制
+
+3. **優惠功能**
+   - 優惠碼 / Coupon
+   - 限時折扣
+   - 組合優惠
+
+4. **退款機制**
+   - 退款申請流程
+   - 退款原因記錄
+   - 自動撤銷存取權限
+
+5. **發票開立**
+   - 電子發票整合
+   - 統一編號支援

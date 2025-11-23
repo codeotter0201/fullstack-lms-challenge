@@ -3,6 +3,7 @@ package com.waterball.lms.model.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -36,6 +37,10 @@ public class Course extends BaseEntity {
 
     @Column(name = "display_order")
     private Integer displayOrder = 0;
+
+    @Column(precision = 10, scale = 2, nullable = false)
+    @Builder.Default
+    private BigDecimal price = BigDecimal.ZERO;
 
     @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
