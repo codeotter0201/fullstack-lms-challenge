@@ -162,9 +162,9 @@ export default function ChapterAccordion({
                             )}>
                               {lessonIndex + 1}. {lesson.title}
                             </p>
-                            {lesson.duration && (
+                            {lesson.videoLength && (
                               <p className="text-xs text-text-muted mt-0.5">
-                                {lesson.duration} 分鐘
+                                {lesson.videoLength}
                               </p>
                             )}
                           </div>

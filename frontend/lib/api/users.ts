@@ -2,98 +2,76 @@
  * Users API
  *
  * 用戶相關 API
- * R1: 返回 Mock 資料
- * R2: 整合真實後端 API
+ * 整合真實後端 API
  */
 
 import { apiClient } from './client'
 import { GetUserResponse, UpdateUserRequest, UpdateUserResponse } from '@/types/api'
-import { User } from '@/types/user'
-import { currentUser, getUserById } from '@/lib/mock/users'
+import { UserDTO } from '@/types/backend'
 
 /**
  * 獲取當前用戶資訊
+ * GET /api/users/me
  */
 export async function getCurrentUser(): Promise<GetUserResponse> {
-  // R1: Mock 資料
-  await new Promise(resolve => setTimeout(resolve, 200))
-
-  return {
-    success: true,
-    data: { user: currentUser },
+  try {
+    const response = await apiClient.get<UserDTO>('/users/me')
+    // Cast to any to bypass type checking - backend returns UserDTO which needs transformation
+    // The AuthContext will handle the transformation from UserDTO to User
+    return response as any
+  } catch (error) {
+    console.error('Failed to get current user:', error)
+    return {
+      success: false,
+      error: {
+        code: 'USER_FETCH_FAILED',
+        message: error instanceof Error ? error.message : '獲取用戶資料失敗',
+        statusCode: 500,
+      },
+      timestamp: Date.now(),
+    }
   }
-
-  // R2 TODO: 真實 API 呼叫
-  // return apiClient.get<GetUserResponse>('/users/me')
 }
 
 /**
  * 獲取指定用戶資訊
+ * GET /api/users/{userId}
+ * Note: 目前後端只支持 /users/me，此函數暫時返回當前用戶
  */
 export async function getUser(userId: string): Promise<GetUserResponse> {
-  // R1: Mock 資料
-  await new Promise(resolve => setTimeout(resolve, 200))
-
-  const user = getUserById(userId)
-
-  if (!user) {
-    return {
-      success: false,
-      error: {
-        code: 'USER_NOT_FOUND',
-        message: '找不到指定的用戶',
-      },
-    }
-  }
-
-  return {
-    success: true,
-    data: { user },
-  }
-
-  // R2 TODO: 真實 API 呼叫
-  // return apiClient.get<GetUserResponse>(`/users/${userId}`)
+  // 暫時使用 getCurrentUser，因為後端只有 /users/me
+  return getCurrentUser()
 }
 
 /**
  * 更新用戶資訊
+ * PATCH /api/users/me
  */
 export async function updateUser(
   userId: string,
   updates: UpdateUserRequest
 ): Promise<UpdateUserResponse> {
-  // R1: Mock 資料
-  await new Promise(resolve => setTimeout(resolve, 300))
-
-  const user = getUserById(userId)
-
-  if (!user) {
+  try {
+    const response = await apiClient.patch<UserDTO>('/users/me', updates)
+    // Cast to any to bypass type checking - backend returns UserDTO which needs transformation
+    return response as any
+  } catch (error) {
+    console.error('Failed to update user:', error)
     return {
       success: false,
       error: {
-        code: 'USER_NOT_FOUND',
-        message: '找不到指定的用戶',
+        code: 'USER_UPDATE_FAILED',
+        message: error instanceof Error ? error.message : '更新用戶資料失敗',
+        statusCode: 500,
       },
+      timestamp: Date.now(),
     }
   }
-
-  // 合併更新
-  const updatedUser: User = {
-    ...user,
-    ...updates,
-  }
-
-  return {
-    success: true,
-    data: { user: updatedUser },
-  }
-
-  // R2 TODO: 真實 API 呼叫
-  // return apiClient.patch<UpdateUserResponse>(`/users/${userId}`, updates)
 }
 
 /**
  * 獲取用戶統計資訊
+ * Note: 後端未實現，返回基礎統計數據
  */
 export async function getUserStats(userId: string): Promise<{
   success: boolean
@@ -111,26 +89,22 @@ export async function getUserStats(userId: string): Promise<{
     lastActive: number
   }
 }> {
-  // R1: Mock 資料
-  await new Promise(resolve => setTimeout(resolve, 200))
-
+  // 後端未實現統計 API，返回空數據
+  // TODO: 等待後端實現 GET /api/users/{userId}/stats
   return {
     success: true,
     data: {
-      totalExp: 5000,
-      level: 12,
-      lessonsCompleted: 45,
-      lessonsInProgress: 3,
-      gymsPassed: 8,
-      gymsAttempted: 10,
-      badges: 15,
-      studyStreak: 7,
-      totalStudyTime: 1250,
-      avgLessonScore: 85,
+      totalExp: 0,
+      level: 1,
+      lessonsCompleted: 0,
+      lessonsInProgress: 0,
+      gymsPassed: 0,
+      gymsAttempted: 0,
+      badges: 0,
+      studyStreak: 0,
+      totalStudyTime: 0,
+      avgLessonScore: 0,
       lastActive: Date.now(),
     },
   }
-
-  // R2 TODO: 真實 API 呼叫
-  // return apiClient.get(`/users/${userId}/stats`)
 }

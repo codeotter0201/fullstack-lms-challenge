@@ -10,6 +10,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 import { User, UserRole, Occupation } from '@/types/user'
 import * as authApi from '@/lib/api/auth'
+import { getCurrentUser } from '@/lib/api/users'
 
 interface AuthContextType {
   user: User | null
@@ -61,7 +62,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (accessToken) {
           // 嘗試使用 token 取得用戶資訊
           try {
-            const response = await authApi.getCurrentUser()
+            const response = await getCurrentUser()
             if (response.success && response.data) {
               const mappedUser = mapBackendUserToFrontend(response.data)
               setUser(mappedUser)
@@ -96,7 +97,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const response = await authApi.login(email, password)
 
       if (response.success && response.data) {
-        const { user: backendUser, accessToken } = response.data
+        // Backend AuthResponse has { accessToken, tokenType, user: UserDTO }
+        const backendData = response.data as any
+        const backendUser = backendData.user
+        const accessToken = backendData.accessToken
 
         // 轉換用戶資料
         const mappedUser = mapBackendUserToFrontend(backendUser)
@@ -128,7 +132,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const response = await authApi.register(email, password, displayName)
 
       if (response.success && response.data) {
-        const { user: backendUser, accessToken } = response.data
+        // Backend AuthResponse has { accessToken, tokenType, user: UserDTO }
+        const backendData = response.data as any
+        const backendUser = backendData.user
+        const accessToken = backendData.accessToken
 
         // 轉換用戶資料
         const mappedUser = mapBackendUserToFrontend(backendUser)

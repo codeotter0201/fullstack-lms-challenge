@@ -106,7 +106,7 @@ export default function ConsultationBookingForm({
 
   return (
     <Modal
-      isOpen={isOpen}
+      open={isOpen}
       onClose={onClose}
       title={`預約與 ${instructorName} 的 1v1 諮詢`}
       size="lg"
@@ -139,10 +139,10 @@ export default function ConsultationBookingForm({
             error={errors.name}
           >
             <Input
-              icon={User}
+              icon={<User className="w-5 h-5" />}
               placeholder="請輸入您的姓名"
               value={formData.name}
-              onChange={(e) => handleChange('name', e.target.value)}
+              onChange={(value) => handleChange('name', value)}
             />
           </FormField>
 
@@ -152,11 +152,11 @@ export default function ConsultationBookingForm({
             error={errors.email}
           >
             <Input
-              icon={Mail}
+              icon={<Mail className="w-5 h-5" />}
               type="email"
               placeholder="your@email.com"
               value={formData.email}
-              onChange={(e) => handleChange('email', e.target.value)}
+              onChange={(value) => handleChange('email', value)}
             />
           </FormField>
 
@@ -166,11 +166,11 @@ export default function ConsultationBookingForm({
             error={errors.phone}
           >
             <Input
-              icon={User}
+              icon={<User className="w-5 h-5" />}
               type="tel"
               placeholder="0912345678"
               value={formData.phone}
-              onChange={(e) => handleChange('phone', e.target.value)}
+              onChange={(value) => handleChange('phone', value)}
             />
           </FormField>
         </div>
@@ -184,12 +184,12 @@ export default function ConsultationBookingForm({
             required
             error={errors.preferredDate}
           >
-            <Input
-              icon={Calendar}
+            <input
               type="date"
               value={formData.preferredDate}
               onChange={(e) => handleChange('preferredDate', e.target.value)}
               min={new Date().toISOString().split('T')[0]}
+              className="w-full px-4 py-2 rounded-lg border border-border bg-background text-text focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </FormField>
 

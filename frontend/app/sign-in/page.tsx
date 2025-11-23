@@ -151,18 +151,16 @@ export default function SignInPage() {
         error={errors.email}
         icon={<Mail className="w-5 h-5" />}
         fullWidth
-        autoComplete="email"
       />
 
       <Input
         type="password"
-        placeholder="密碼（至少 4 碼）"
+        placeholder="密碼（至少 8 碼）"
         value={formData.password}
         onChange={(value) => updateFormData('password', value)}
         error={errors.password}
         icon={<Lock className="w-5 h-5" />}
         fullWidth
-        autoComplete="current-password"
       />
 
       <Button
@@ -189,18 +187,16 @@ export default function SignInPage() {
         error={errors.email}
         icon={<Mail className="w-5 h-5" />}
         fullWidth
-        autoComplete="email"
       />
 
       <Input
         type="password"
-        placeholder="密碼（至少 4 碼）"
+        placeholder="密碼（至少 8 碼）"
         value={formData.password}
         onChange={(value) => updateFormData('password', value)}
         error={errors.password}
         icon={<Lock className="w-5 h-5" />}
         fullWidth
-        autoComplete="new-password"
       />
 
       <Input
@@ -211,7 +207,6 @@ export default function SignInPage() {
         error={errors.displayName}
         icon={<User className="w-5 h-5" />}
         fullWidth
-        autoComplete="name"
       />
 
       <Button

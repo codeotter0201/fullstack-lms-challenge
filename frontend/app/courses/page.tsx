@@ -11,9 +11,11 @@ import { MainLayout } from '@/components/layout'
 import { FeaturedCourses } from '@/components/home'
 import { OrderHistory } from '@/components/order'
 import { useJourney } from '@/contexts'
+import { usePurchaseHistory } from '@/hooks/usePurchaseHistory'
 
 export default function CoursesPage() {
   const { journeys, loadJourneys, ownedJourneys } = useJourney()
+  const { orders, isLoading: ordersLoading } = usePurchaseHistory()
 
   useEffect(() => {
     loadJourneys()
@@ -35,9 +37,6 @@ export default function CoursesPage() {
     isOwned: ownedJourneys?.some((owned) => owned.id === journey.id) || false,
   }))
 
-  // Mock 訂單記錄 (實際應從 API 獲取)
-  const mockOrders = []
-
   return (
     <MainLayout>
       {/* 課程卡片區 */}
@@ -47,7 +46,7 @@ export default function CoursesPage() {
 
       {/* 訂單記錄區 */}
       <div className="px-6 pb-8">
-        <OrderHistory orders={mockOrders} />
+        <OrderHistory orders={orders} />
       </div>
     </MainLayout>
   )

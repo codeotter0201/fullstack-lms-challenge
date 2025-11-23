@@ -13,9 +13,8 @@ import { cn } from '@/lib/utils'
 import { Menu, X, Bell, Settings, ChevronDown } from 'lucide-react'
 import Logo from './Logo'
 import { Avatar, Badge, Dropdown } from '@/components/ui'
-import { currentUser } from '@/lib/mock/users'
 import { DropdownItem } from '@/types/ui'
-import { useJourney } from '@/contexts'
+import { useJourney, useAuth } from '@/contexts'
 
 const navLinks = [
   { href: '/', label: '首頁' },
@@ -28,6 +27,7 @@ export default function Navbar() {
   const pathname = usePathname()
   const router = useRouter()
   const { journeys, selectedJourney, setSelectedJourney, isLoading } = useJourney()
+  const { user } = useAuth()
 
   // 課程下拉選單項目
   const courseMenuItems: DropdownItem[] = [
@@ -163,17 +163,17 @@ export default function Navbar() {
             <Dropdown items={userMenuItems} placement="bottom-end">
               <button className="flex items-center gap-3 p-1 rounded-lg hover:bg-gray-100 transition-colors">
                 <Avatar
-                  src={currentUser.pictureUrl}
-                  alt={currentUser.name}
+                  src={user?.pictureUrl || ''}
+                  alt={user?.name || ''}
                   size="sm"
-                  badge={<span className="text-[10px]">{currentUser.level}</span>}
+                  badge={<span className="text-[10px]">{user?.level}</span>}
                 />
                 <div className="hidden lg:block text-left">
                   <p className="text-sm font-medium text-gray-900">
-                    {currentUser.nickname || currentUser.name}
+                    {user?.nickname || user?.name}
                   </p>
                   <p className="text-xs text-gray-500">
-                    Lv.{currentUser.level}
+                    Lv.{user?.level}
                   </p>
                 </div>
               </button>
@@ -201,17 +201,17 @@ export default function Navbar() {
             {/* 用戶資訊 */}
             <div className="flex items-center gap-3 pb-4 border-b border-gray-200">
               <Avatar
-                src={currentUser.pictureUrl}
-                alt={currentUser.name}
+                src={user?.pictureUrl || ''}
+                alt={user?.name || ''}
                 size="md"
-                badge={<span className="text-xs">{currentUser.level}</span>}
+                badge={<span className="text-xs">{user?.level}</span>}
               />
               <div>
                 <p className="font-medium text-gray-900">
-                  {currentUser.nickname || currentUser.name}
+                  {user?.nickname || user?.name}
                 </p>
                 <p className="text-sm text-gray-500">
-                  Lv.{currentUser.level} • {currentUser.exp} EXP
+                  Lv.{user?.level} • {user?.exp} EXP
                 </p>
               </div>
             </div>

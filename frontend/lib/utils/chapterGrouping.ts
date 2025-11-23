@@ -66,8 +66,6 @@ function generateFixedSizeChapters(
         externalRewardDescription: '',
       },
       passwordRequired: false,
-      password: undefined,
-      locked: false,
       lessons: chapterLessons.map((l) => convertLessonDTOToLesson(l, virtualChapterId)),
       gyms: [], // Empty for R1
       order: chapterNumber,
@@ -136,8 +134,6 @@ function generateSmartChapters(lessons: LessonDTO[], courseId: number): Chapter[
         externalRewardDescription: '',
       },
       passwordRequired: false,
-      password: undefined,
-      locked: false,
       lessons: group.map((l) => convertLessonDTOToLesson(l, virtualChapterId)),
       gyms: [],
       order: chapterNumber,
@@ -168,8 +164,6 @@ function generateSingleChapter(lessons: LessonDTO[], courseId: number): Chapter[
         externalRewardDescription: '',
       },
       passwordRequired: false,
-      password: undefined,
-      locked: false,
       lessons: sortedLessons.map((l) => convertLessonDTOToLesson(l, virtualChapterId)),
       gyms: [],
       order: 1,
@@ -208,7 +202,7 @@ export function groupLessonsIntoChapters(
   // Convert Lessons to LessonDTO-like format for grouping
   const lessonDTOs: LessonDTO[] = lessons.map((lesson) => ({
     id: lesson.id,
-    courseId: lesson.courseId || lesson.journeyId,
+    courseId: lesson.courseId || lesson.journeyId || courseId,
     title: lesson.title || lesson.name,
     description: lesson.description || '',
     type: (lesson.type?.toUpperCase() as 'VIDEO' | 'SCROLL' | 'GOOGLE_FORM') || 'VIDEO',

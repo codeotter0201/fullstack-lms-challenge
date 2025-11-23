@@ -14,31 +14,18 @@ import {
   CurrentUserRankCard,
 } from '@/components/leaderboard'
 import { Spinner } from '@/components/ui'
-import { useAuth } from '@/contexts'
+import { useAuth, useLeaderboard } from '@/contexts'
 import { LeaderboardEntry } from '@/types/leaderboard'
-import { getLeaderboard, getUserRank } from '@/lib/mock/leaderboard'
 import { LeaderboardType, LeaderboardTimeRange, LeaderboardSortBy } from '@/types/leaderboard'
 
 type LeaderboardTab = 'learning' | 'weekly'
 
 export default function LeaderboardPage() {
   const { user } = useAuth()
+  const { entries, userRank, setType, setTimeRange, setSortBy, isLoading } = useLeaderboard()
   const [activeTab, setActiveTab] = useState<LeaderboardTab>('learning')
-  const [entries, setEntries] = useState<LeaderboardEntry[]>([])
-  const [currentUserEntry, setCurrentUserEntry] = useState<LeaderboardEntry | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    loadLeaderboard()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab, user?.id])
-
-  const loadLeaderboard = async () => {
-    setIsLoading(true)
-
-    // 模擬 API 延遲
-    await new Promise(resolve => setTimeout(resolve, 300))
-
     // 根據 Tab 決定載入哪種排行榜
     const type = activeTab === 'weekly'
       ? LeaderboardType.WEEKLY
@@ -48,33 +35,10 @@ export default function LeaderboardPage() {
       ? LeaderboardTimeRange.THIS_WEEK
       : LeaderboardTimeRange.ALL_TIME
 
-    const data = getLeaderboard(
-      type,
-      timeRange,
-      LeaderboardSortBy.EXP,
-      undefined,
-      30 // 顯示前 30 名
-    )
-
-    setEntries(data.entries)
-
-    // 找到當前用戶的排名（如果已登入且不在前 30 名）
-    if (user) {
-      const userRank = getUserRank(user.id)
-      if (userRank && userRank.globalRank > 30) {
-        // 從完整列表中找到用戶條目
-        const fullData = getLeaderboard(type, timeRange, LeaderboardSortBy.EXP, undefined, 1000)
-        const userEntry = fullData.entries.find(e => e.userId === user.id)
-        if (userEntry) {
-          setCurrentUserEntry(userEntry)
-        }
-      } else {
-        setCurrentUserEntry(null)
-      }
-    }
-
-    setIsLoading(false)
-  }
+    setType(type)
+    setTimeRange(timeRange)
+    setSortBy(LeaderboardSortBy.EXP)
+  }, [activeTab, setType, setTimeRange, setSortBy])
 
   return (
     <MainLayout>
@@ -106,12 +70,26 @@ export default function LeaderboardPage() {
           ) : (
             <div className="bg-gray-800 rounded-lg overflow-hidden shadow-xl">
               {/* 排行榜列表 */}
-              <LeaderboardTable entries={entries} />
+              <LeaderboardTable entries={entries || []} />
 
-              {/* 當前用戶排名 (如果不在前 30 名) */}
-              {currentUserEntry && (
+              {/* 當前用戶排名 (如果有的話) */}
+              {userRank && user && (
                 <div className="p-4 bg-gray-900">
-                  <CurrentUserRankCard entry={currentUserEntry} />
+                  <CurrentUserRankCard entry={{
+                    rank: userRank.globalRank,
+                    userId: user.id,
+                    username: user.name,
+                    nickname: user.nickname,
+                    pictureUrl: user.pictureUrl || '',
+                    occupation: user.occupation || 'backend_developer',
+                    level: user.level,
+                    exp: user.exp,
+                    lessonsCompleted: 0,
+                    gymsPassed: 0,
+                    badges: 0,
+                    expGained: 0,
+                    isCurrentUser: true,
+                  }} />
                 </div>
               )}
             </div>

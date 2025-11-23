@@ -101,15 +101,20 @@ export default function JourneyDetailPage() {
   const ownershipStatus = isOwned ? 'owned' : currentJourney.isPremium ? 'premium' : 'not-owned'
 
   const handleConsultationBooking = () => {
-    showToast('1v1 諮詢預約功能開發中', 'info')
+    showToast('info', '1v1 諮詢預約功能開發中')
   }
 
   const handleDownloadCertificate = () => {
-    showToast('證書下載功能開發中', 'info')
+    showToast('info', '證書下載功能開發中')
   }
 
   const handleShareCertificate = () => {
-    showToast('證書分享功能開發中', 'info')
+    showToast('info', '證書分享功能開發中')
+  }
+
+  const handlePurchaseClick = () => {
+    // 導航到訂單確認頁面
+    router.push(`/journeys/${journeySlug}/orders?productId=${currentJourney?.id}`)
   }
 
   return (
@@ -205,8 +210,12 @@ export default function JourneyDetailPage() {
                       <p className="text-sm text-text-secondary mb-4">
                         此課程需要購買才能學習，立即解鎖所有內容
                       </p>
-                      <Button variant="primary" size="sm">
-                        立即購買 NT$ 3,480
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        onClick={handlePurchaseClick}
+                      >
+                        立即購買 NT$ {currentJourney.price?.toLocaleString() || '0'}
                       </Button>
                     </div>
                   </div>
@@ -297,7 +306,7 @@ export default function JourneyDetailPage() {
                   {completionPercentage === 100 && (
                     <CertificateCard
                       journeyName={currentJourney.name}
-                      userName={user?.displayName || '學員'}
+                      userName={(user as any)?.displayName || '學員'}
                       completedAt={new Date()}
                       onDownload={handleDownloadCertificate}
                       onShare={handleShareCertificate}

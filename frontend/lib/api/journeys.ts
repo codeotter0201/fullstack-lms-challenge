@@ -9,10 +9,18 @@ import { apiClient } from './client'
 import {
   GetJourneysResponse,
   GetJourneyResponse,
-  GetJourneyProgressResponse,
+  ApiResponse,
 } from '@/types/api'
 import { Journey, Chapter } from '@/types/journey'
 import type { CourseDTO, LessonDTO } from '@/types/backend'
+
+// Journey progress response type
+type GetJourneyProgressResponse = ApiResponse<{
+  journeyId: number
+  progress: Record<string, { completed: boolean; progress: number }>
+  completedLessons: number
+  totalLessons: number
+}>
 import { transformCourseToJourney, transformLessons } from './transformers/course'
 
 /**
@@ -29,13 +37,14 @@ export async function getJourneys(): Promise<GetJourneysResponse> {
         error: response.error || {
           code: 'FETCH_FAILED',
           message: '無法獲取課程列表',
+          statusCode: 500,
         },
         timestamp: Date.now(),
       }
     }
 
     // Transform backend DTOs to frontend types
-    const journeys = response.data.map(transformCourseToJourney)
+    const journeys = response.data.map((course) => transformCourseToJourney(course))
 
     return {
       success: true,
@@ -51,6 +60,7 @@ export async function getJourneys(): Promise<GetJourneysResponse> {
       error: {
         code: 'NETWORK_ERROR',
         message: error instanceof Error ? error.message : '網路錯誤',
+        statusCode: 500,
       },
       timestamp: Date.now(),
     }
@@ -71,24 +81,22 @@ export async function getJourney(journeyId: number): Promise<GetJourneyResponse>
         error: courseResponse.error || {
           code: 'JOURNEY_NOT_FOUND',
           message: '找不到指定的課程',
+          statusCode: 404,
         },
         timestamp: Date.now(),
       }
     }
-
-    // Transform course DTO to journey
-    const journey = transformCourseToJourney(courseResponse.data)
 
     // Fetch lessons for this course: GET /api/courses/{courseId}/lessons
     const lessonsResponse = await apiClient.get<LessonDTO[]>(
       `/courses/${journeyId}/lessons`
     )
 
-    if (lessonsResponse.success && lessonsResponse.data) {
-      // Transform lessons and attach to journey
-      const lessons = transformLessons(lessonsResponse.data)
-      journey.missions = lessons
-    }
+    // Transform course DTO to journey, passing lessons to generate chapters
+    const journey = transformCourseToJourney(
+      courseResponse.data,
+      lessonsResponse.success ? lessonsResponse.data : undefined
+    )
 
     return {
       success: true,
@@ -101,6 +109,7 @@ export async function getJourney(journeyId: number): Promise<GetJourneyResponse>
       error: {
         code: 'NETWORK_ERROR',
         message: error instanceof Error ? error.message : '網路錯誤',
+        statusCode: 500,
       },
       timestamp: Date.now(),
     }
@@ -126,6 +135,7 @@ export async function getJourneyProgress(
         error: response.error || {
           code: 'FETCH_FAILED',
           message: '無法獲取課程進度',
+          statusCode: 500,
         },
         timestamp: Date.now(),
       }
@@ -161,6 +171,7 @@ export async function getJourneyProgress(
       error: {
         code: 'NETWORK_ERROR',
         message: error instanceof Error ? error.message : '網路錯誤',
+        statusCode: 500,
       },
       timestamp: Date.now(),
     }

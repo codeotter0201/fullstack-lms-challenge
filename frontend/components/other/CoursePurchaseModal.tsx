@@ -19,6 +19,7 @@ export interface CoursePurchaseModalProps {
   originalPrice: number
   discountAmount?: number
   onPurchaseConfirm: (paymentMethod: PaymentMethod) => void
+  isLoading?: boolean
 }
 
 export type PaymentMethod = 'credit_card' | 'atm' | 'mobile'
@@ -52,6 +53,7 @@ export default function CoursePurchaseModal({
   originalPrice,
   discountAmount = 0,
   onPurchaseConfirm,
+  isLoading = false,
 }: CoursePurchaseModalProps) {
   const [selectedPayment, setSelectedPayment] = useState<PaymentMethod>('credit_card')
   const [agreed, setAgreed] = useState(false)
@@ -68,21 +70,22 @@ export default function CoursePurchaseModal({
 
   return (
     <Modal
-      isOpen={isOpen}
+      open={isOpen}
       onClose={onClose}
       title="確認購買"
       size="lg"
       footer={
         <div className="flex gap-3 justify-end">
-          <Button variant="outline" onClick={onClose}>
+          <Button variant="outline" onClick={onClose} disabled={isLoading}>
             取消
           </Button>
           <Button
             variant="primary"
             onClick={handleConfirm}
-            disabled={!agreed}
+            disabled={!agreed || isLoading}
+            loading={isLoading}
           >
-            確認購買 NT$ {finalPrice.toLocaleString()}
+            {isLoading ? '處理中...' : `確認購買 NT$ ${finalPrice.toLocaleString()}`}
           </Button>
         </div>
       }

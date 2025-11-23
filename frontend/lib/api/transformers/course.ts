@@ -37,10 +37,9 @@ export function transformCourseToJourney(
     discountAmount: undefined,
   }
 
-  // If lessons are provided, generate chapters and populate missions
+  // If lessons are provided, generate chapters
   if (lessons && lessons.length > 0) {
     journey.chapters = generateChaptersFromLessons(lessons, course.id, 'fixed-size')
-    journey.missions = convertLessonDTOsToLessons(lessons)
   }
 
   return journey
@@ -58,7 +57,7 @@ export function transformLessonDTO(lessonDTO: LessonDTO, virtualChapterId?: numb
  * Transform array of CourseDTO to array of Journey
  */
 export function transformCourses(courses: CourseDTO[]): Journey[] {
-  return courses.map(transformCourseToJourney)
+  return courses.map(course => transformCourseToJourney(course))
 }
 
 /**

@@ -20,7 +20,7 @@ import {
   getLeaderboard,
   getUserRank,
   searchLeaderboard,
-} from '@/lib/mock/leaderboard'
+} from '@/lib/api/leaderboard'
 import { useAuth } from './AuthContext'
 
 interface LeaderboardContextType {
@@ -74,17 +74,14 @@ export function LeaderboardProvider({ children }: { children: ReactNode }) {
   const loadLeaderboard = useCallback(async () => {
     setIsLoading(true)
     try {
-      // R1: 使用 Mock 資料
-      await new Promise(resolve => setTimeout(resolve, 300))
-
       let result: LeaderboardEntry[]
 
       // 如果有搜尋條件
       if (searchQuery.trim()) {
         result = searchLeaderboard(searchQuery, type)
       } else {
-        const response = getLeaderboard(type, timeRange, sortBy)
-        result = response.entries
+        const response = await getLeaderboard(type, timeRange, sortBy)
+        result = response.data?.entries || []
       }
 
       setEntries(result)
@@ -92,8 +89,8 @@ export function LeaderboardProvider({ children }: { children: ReactNode }) {
 
       // 載入用戶排名
       if (user) {
-        const rank = getUserRank(user.id)
-        setUserRank(rank || null)
+        const rankResponse = await getUserRank(user.id.toString())
+        setUserRank(rankResponse.data || null)
       }
 
       // R2 TODO: 從 API 載入

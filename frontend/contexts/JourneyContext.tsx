@@ -9,7 +9,8 @@
 
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react'
 import { Journey, Chapter, Lesson } from '@/types/journey'
-import { LessonProgress, GymChallengeRecord } from '@/types/lesson'
+import { LessonProgress } from '@/types/lesson'
+import { GymChallengeRecord } from '@/types/gym'
 import { useAuth } from './AuthContext'
 import { getJourneys, getJourney, getJourneyProgress } from '@/lib/api/journeys'
 import { getMyPurchases, checkAccess as checkCourseAccess } from '@/lib/api/purchases'
@@ -30,7 +31,7 @@ interface JourneyContextType {
   loadJourneys: () => Promise<void>
   setSelectedJourney: (journey: Journey | null) => void
   updateProgress: (lessonId: number, progress: Partial<LessonProgress>) => Promise<void>
-  submitLesson: (lessonId: number) => Promise<void>
+  submitLesson: (lessonId: number) => Promise<any>
   unlockChapter: (chapterId: number, password: string) => Promise<boolean>
   checkAccess: (journeyId: number) => boolean
 }
@@ -118,10 +119,24 @@ export function JourneyProvider({ children }: { children: ReactNode }) {
 
       // Load user progress if logged in
       if (user) {
-        const progressResponse = await getJourneyProgress(journeyId, user.id)
+        const progressResponse = await getJourneyProgress(journeyId, String(user.id))
 
         if (progressResponse.success && progressResponse.data) {
-          setProgressMap(progressResponse.data.progress)
+          // Transform string keys to numbers and map to LessonProgress
+          const transformedProgress: Record<number, LessonProgress> = {}
+          Object.entries(progressResponse.data.progress).forEach(([key, value]) => {
+            transformedProgress[parseInt(key)] = {
+              userId: user.id,
+              lessonId: parseInt(key),
+              currentTime: 0,
+              duration: 0,
+              percentage: value.progress,
+              completed: value.completed,
+              delivered: false,
+              lastUpdated: Date.now(),
+            }
+          })
+          setProgressMap(transformedProgress)
         } else {
           // No progress data, start fresh
           setProgressMap({})
@@ -140,8 +155,7 @@ export function JourneyProvider({ children }: { children: ReactNode }) {
 
   /**
    * 更新課程進度
-   * Note: Backend progress API not yet fully implemented
-   * This is a placeholder for future implementation
+   * R2: 整合真實後端 API
    */
   const updateProgress = async (
     lessonId: number,
@@ -150,42 +164,73 @@ export function JourneyProvider({ children }: { children: ReactNode }) {
     if (!user) return
 
     try {
-      // Update local state immediately for better UX
+      // Update local state immediately for better UX (optimistic update)
+      const previousState = progressMap[lessonId]
+
       setProgressMap((prev) => ({
         ...prev,
         [lessonId]: {
-          ...(prev[lessonId] || { completed: false, progress: 0 }),
+          ...(prev[lessonId] || { completed: false, percentage: 0 }),
           ...progressUpdate,
         },
       }))
 
-      // TODO: Sync to backend when progress update API is ready
-      // await apiClient.post('/progress/update', {
-      //   lessonId,
-      //   position: progressUpdate.currentPosition || 0,
-      //   duration: progressUpdate.videoDuration || 0,
-      // })
+      // Sync to backend
+      if (progressUpdate.currentTime !== undefined && progressUpdate.duration !== undefined) {
+        const { updateLessonProgress } = await import('@/lib/api/progress')
+        const response = await updateLessonProgress(
+          lessonId,
+          progressUpdate.currentTime,
+          progressUpdate.duration
+        )
+
+        // Update with backend response data
+        if (response.success && response.data) {
+          setProgressMap((prev) => ({
+            ...prev,
+            [lessonId]: {
+              ...prev[lessonId],
+              completed: response.data!.isCompleted,
+              percentage: response.data!.progressPercentage,
+            },
+          }))
+        } else {
+          // Rollback on failure
+          setProgressMap((prev) => ({
+            ...prev,
+            [lessonId]: previousState || { completed: false, percentage: 0 },
+          }))
+        }
+      }
     } catch (error) {
       console.error('Failed to update progress:', error)
-      throw error
+      // Don't throw - silently fail to not disrupt viewing experience
     }
   }
 
   /**
    * 繳交單元
-   * Note: Backend submit API not yet fully implemented
-   * This is a placeholder for future implementation
+   * R2: 整合真實後端 API
    */
   const submitLesson = async (lessonId: number) => {
     if (!user) return
 
     try {
+      // Call backend submit API
+      const { submitLessonCompletion } = await import('@/lib/api/progress')
+      const response = await submitLessonCompletion(lessonId)
+
+      if (!response.success || !response.data) {
+        throw new Error(response.error?.message || '單元提交失敗')
+      }
+
       // Mark as submitted locally
       const result: LessonProgress = {
-        ...(progressMap[lessonId] || { completed: false, progress: 0 }),
+        ...(progressMap[lessonId] || { completed: false, percentage: 0 }),
         completed: true,
-        progress: 100,
-        submittedAt: Date.now(),
+        percentage: 100,
+        delivered: true,
+        lastUpdated: Date.now(),
       }
 
       setProgressMap((prev) => ({
@@ -193,15 +238,17 @@ export function JourneyProvider({ children }: { children: ReactNode }) {
         [lessonId]: result,
       }))
 
-      // TODO: Call backend submit API when ready
-      // const response = await apiClient.post('/progress/submit', {
-      //   lessonId,
-      // })
-      // if (response.success && response.data) {
-      //   // Update user experience points, etc.
+      // Update user data with new experience and level from backend
+      // Note: User update is handled by the page component that receives the response
+      // if (response.data.user) {
+      //   // Update user in AuthContext
       // }
 
-      return result
+      return {
+        ...result,
+        experienceGained: response.data.experienceGained,
+        user: response.data.user,
+      }
     } catch (error) {
       console.error('Failed to submit lesson:', error)
       throw error
@@ -221,7 +268,7 @@ export function JourneyProvider({ children }: { children: ReactNode }) {
       if (!chapter) return false
 
       // Check password locally (backend doesn't have chapter system yet)
-      const isCorrect = chapter.password === password
+      const isCorrect = (chapter as any).password === password
 
       if (isCorrect) {
         // Update chapter state locally

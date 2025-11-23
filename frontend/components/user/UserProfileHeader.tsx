@@ -15,7 +15,7 @@ export interface UserProfileHeaderProps {
 
 export function UserProfileHeader({ user }: UserProfileHeaderProps) {
   const displayName = user.nickname || user.name || user.email || '用戶'
-  const userId = user.userId || user.id
+  const userId = user.id
   const userTag = `${displayName}${userId ? ` #${userId}` : ''}`
 
   return (
@@ -23,7 +23,7 @@ export function UserProfileHeader({ user }: UserProfileHeaderProps) {
       <Avatar
         src={user.pictureUrl || '/blog/avatar.webp'}
         alt={displayName}
-        size="3xl"
+        size="2xl"
         className="mb-4"
       />
       <h1 className="text-2xl font-bold text-white">

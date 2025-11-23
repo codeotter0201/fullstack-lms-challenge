@@ -6,14 +6,16 @@
  */
 
 import { apiClient } from './client'
-import { LoginRequest, LoginResponse, LogoutResponse, RegisterRequest, RegisterResponse } from '@/types/api'
+import { LoginRequest, LogoutResponse, RegisterRequest } from '@/types/api'
+import { AuthResponse } from '@/types/backend'
+import { ApiResponse } from '@/types/api'
 
 /**
  * 登入
  * 使用 email + password 登入
  */
-export async function login(email: string, password: string): Promise<LoginResponse> {
-  const response = await apiClient.post<LoginResponse>('/auth/login', {
+export async function login(email: string, password: string): Promise<ApiResponse<AuthResponse>> {
+  const response = await apiClient.post<AuthResponse>('/auth/login', {
     email,
     password,
   })
@@ -29,8 +31,8 @@ export async function register(
   email: string,
   password: string,
   displayName: string
-): Promise<RegisterResponse> {
-  const response = await apiClient.post<RegisterResponse>('/auth/register', {
+): Promise<ApiResponse<AuthResponse>> {
+  const response = await apiClient.post<AuthResponse>('/auth/register', {
     email,
     password,
     displayName,
@@ -54,8 +56,9 @@ export async function logout(): Promise<LogoutResponse> {
 
 /**
  * 取得當前用戶資訊
+ * @deprecated Use getCurrentUser from users.ts instead
  */
-export async function getCurrentUser() {
-  const response = await apiClient.get('/auth/me')
-  return response
-}
+// export async function getCurrentUser() {
+//   const response = await apiClient.get('/auth/me')
+//   return response
+// }

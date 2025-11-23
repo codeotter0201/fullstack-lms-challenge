@@ -51,7 +51,7 @@ export default function LessonCard({
   const isDelivered = progress?.delivered || false
   const progressPercentage = progress?.percentage || 0
 
-  const Icon = lessonTypeIcons[type]
+  const Icon = lessonTypeIcons[type as LessonType] || Video
 
   // 鎖定狀態不可點擊
   const content = (
@@ -116,7 +116,7 @@ export default function LessonCard({
               )}
 
               {/* 已交付標記 */}
-              {isDelivered && (
+              {isDelivered && reward && (
                 <div className="flex items-center gap-1 text-green-600">
                   <Award className="w-4 h-4" />
                   <span className="text-xs">+{reward.exp} EXP</span>
@@ -134,14 +134,14 @@ export default function LessonCard({
 
           {/* 元資料 */}
           <div className="flex items-center gap-4 text-sm text-gray-500 mb-2">
-            <span>{lessonTypeNames[type]}</span>
+            <span>{lessonTypeNames[type as LessonType] || '影片'}</span>
             {videoLength && (
               <>
                 <span>•</span>
                 <span>{videoLength}</span>
               </>
             )}
-            {!locked && (
+            {!locked && reward && (
               <>
                 <span>•</span>
                 <span className="text-primary-600">

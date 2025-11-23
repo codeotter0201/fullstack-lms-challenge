@@ -7,13 +7,13 @@
  */
 
 import { apiClient } from './client'
-import { GetLeaderboardResponse, GetUserRankResponse } from '@/types/api'
+import { GetLeaderboardApiResponse as GetLeaderboardResponse, GetUserRankResponse } from '@/types/api'
 import {
   LeaderboardType,
   LeaderboardTimeRange,
   LeaderboardSortBy,
 } from '@/types/leaderboard'
-import { getLeaderboard, getUserRank, searchLeaderboard } from '@/lib/mock/leaderboard'
+import { getLeaderboard as getLeaderboardMock, getUserRank as getUserRankMock, searchLeaderboard as searchLeaderboardMock } from '@/lib/mock/leaderboard'
 
 /**
  * 獲取排行榜
@@ -28,26 +28,31 @@ export async function fetchLeaderboard(
   // R1: Mock 資料
   await new Promise(resolve => setTimeout(resolve, 300))
 
-  let entries
+  let entriesResult
 
   if (search) {
-    entries = searchLeaderboard(search)
+    entriesResult = searchLeaderboardMock(search)
   } else {
-    entries = getLeaderboard(type, timeRange, sortBy)
+    entriesResult = getLeaderboardMock(type, timeRange, sortBy)
   }
 
+  // Extract entries array from the response
+  const entries = Array.isArray(entriesResult) ? entriesResult : entriesResult.entries
+
   // 限制返回數量
-  entries = entries.slice(0, limit)
+  const limitedEntries = entries.slice(0, limit)
 
   return {
     success: true,
     data: {
-      entries,
-      total: entries.length,
+      entries: limitedEntries,
+      totalEntries: limitedEntries.length,
       type,
       timeRange,
       sortBy,
+      updatedAt: Date.now(),
     },
+    timestamp: Date.now(),
   }
 
   // R2 TODO: 真實 API 呼叫
@@ -70,7 +75,7 @@ export async function fetchUserRank(
   // R1: Mock 資料
   await new Promise(resolve => setTimeout(resolve, 200))
 
-  const userRank = getUserRank(userId, type)
+  const userRank = getUserRankMock(parseInt(userId))
 
   if (!userRank) {
     return {
@@ -78,13 +83,16 @@ export async function fetchUserRank(
       error: {
         code: 'USER_RANK_NOT_FOUND',
         message: '找不到用戶排名資訊',
+        statusCode: 404,
       },
+      timestamp: Date.now(),
     }
   }
 
   return {
     success: true,
-    data: { userRank },
+    data: userRank,
+    timestamp: Date.now(),
   }
 
   // R2 TODO: 真實 API 呼叫
@@ -103,18 +111,21 @@ export async function fetchTopRankers(
   // R1: Mock 資料
   await new Promise(resolve => setTimeout(resolve, 200))
 
-  const entries = getLeaderboard(type, LeaderboardTimeRange.ALL_TIME, LeaderboardSortBy.EXP)
+  const result = getLeaderboardMock(type, LeaderboardTimeRange.ALL_TIME, LeaderboardSortBy.EXP)
+  const entries = Array.isArray(result) ? result : result.entries
   const topEntries = entries.slice(0, count)
 
   return {
     success: true,
     data: {
       entries: topEntries,
-      total: topEntries.length,
+      totalEntries: topEntries.length,
       type,
       timeRange: LeaderboardTimeRange.ALL_TIME,
       sortBy: LeaderboardSortBy.EXP,
+      updatedAt: Date.now(),
     },
+    timestamp: Date.now(),
   }
 
   // R2 TODO: 真實 API 呼叫
@@ -122,3 +133,8 @@ export async function fetchTopRankers(
   //   type,
   // })
 }
+
+// Export aliases for backward compatibility with existing code
+export { fetchLeaderboard as getLeaderboard }
+export { fetchUserRank as getUserRank }
+export { searchLeaderboardMock as searchLeaderboard }

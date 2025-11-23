@@ -113,6 +113,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         {toasts.map(toast => (
           <div key={toast.id} className="pointer-events-auto">
             <Toast
+              id={toast.id}
               type={toast.type}
               message={toast.message}
               onClose={() => hideToast(toast.id)}

@@ -48,11 +48,6 @@ export default function CourseCard({
     router.push(`/journeys/${slug}`)
   }
 
-  const handlePurchase = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    onPurchaseClick?.()
-  }
-
   return (
     <div
       className={cn(
@@ -120,7 +115,7 @@ export default function CourseCard({
           <Button
             variant="primary"
             size="md"
-            onClick={isOwned ? handleNavigate : handlePurchase}
+            onClick={isOwned ? handleNavigate : () => onPurchaseClick?.()}
             className={cn(showDiscount ? '' : 'w-full')}
           >
             {isOwned ? '立刻體驗' : isPremium ? '立刻購買' : '立刻體驗'}

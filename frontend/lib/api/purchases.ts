@@ -34,6 +34,7 @@ export async function purchaseCourse(
       error: {
         code: 'PURCHASE_FAILED',
         message: error instanceof Error ? error.message : '購買失敗',
+        statusCode: 500,
       },
       timestamp: Date.now(),
     }
@@ -60,6 +61,7 @@ export async function getMyPurchases(): Promise<ApiResponse<PurchaseDTO[]>> {
       error: {
         code: 'FETCH_FAILED',
         message: error instanceof Error ? error.message : '無法獲取購買記錄',
+        statusCode: 500,
       },
       timestamp: Date.now(),
     }
@@ -90,6 +92,7 @@ export async function checkPurchase(
       error: {
         code: 'CHECK_FAILED',
         message: error instanceof Error ? error.message : '檢查購買狀態失敗',
+        statusCode: 500,
       },
       timestamp: Date.now(),
     }
@@ -124,6 +127,7 @@ export async function checkAccess(
       error: {
         code: 'ACCESS_CHECK_FAILED',
         message: error instanceof Error ? error.message : '檢查存取權限失敗',
+        statusCode: 500,
       },
       timestamp: Date.now(),
     }

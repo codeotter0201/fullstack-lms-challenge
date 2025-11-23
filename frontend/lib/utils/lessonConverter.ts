@@ -6,7 +6,8 @@
  */
 
 import type { LessonDTO } from '@/types/backend'
-import type { Lesson, LessonType, Reward } from '@/types/journey'
+import type { Lesson, Reward } from '@/types/journey'
+import { LessonType } from '@/types/journey'
 
 /**
  * Convert backend LessonDTO to frontend Lesson type
@@ -51,11 +52,11 @@ export function convertLessonDTOToLesson(
  */
 function mapLessonType(backendType: 'VIDEO' | 'SCROLL' | 'GOOGLE_FORM'): LessonType {
   const typeMap: Record<string, LessonType> = {
-    VIDEO: 'video',
-    SCROLL: 'scroll',
-    GOOGLE_FORM: 'google-form',
+    VIDEO: LessonType.VIDEO,
+    SCROLL: LessonType.SCROLL,
+    GOOGLE_FORM: LessonType.GOOGLE_FORM,
   }
-  return typeMap[backendType] || 'video'
+  return typeMap[backendType] || LessonType.VIDEO
 }
 
 /**

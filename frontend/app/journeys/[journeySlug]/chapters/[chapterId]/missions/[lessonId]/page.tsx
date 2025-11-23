@@ -6,19 +6,20 @@
 
 'use client'
 
-import { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { MainLayout, Container, Section, Breadcrumb } from '@/components/layout'
 import { VideoPlayer, LessonCard } from '@/components/course'
 import { Button, Card, Badge, Spinner, EmptyState } from '@/components/ui'
 import { useJourney, useAuth, useToast } from '@/contexts'
-import { getLessonById } from '@/lib/mock/journeys'
-import { BookOpen, CheckCircle, Award, ChevronLeft, ChevronRight } from 'lucide-react'
+import { getLesson } from '@/lib/api/lessons'
+import { Lesson } from '@/types/journey'
+import { BookOpen, CheckCircle, Award, ChevronLeft, ChevronRight, Lock } from 'lucide-react'
 
 export default function LessonPage() {
   const params = useParams()
   const router = useRouter()
-  const { user, isAuthenticated } = useAuth()
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth()
   const { currentJourney, progressMap, updateProgress, submitLesson, loadJourney } = useJourney()
   const { success, error } = useToast()
 
@@ -26,9 +27,16 @@ export default function LessonPage() {
   const chapterId = parseInt(params.chapterId as string)
   const lessonId = parseInt(params.lessonId as string)
 
+  const [lesson, setLesson] = useState<Lesson | null>(null)
+  const [isLoadingLesson, setIsLoadingLesson] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isRedirecting, setIsRedirecting] = useState(false)
 
+  // Load journey and lesson
   useEffect(() => {
+    // Wait for auth to finish loading before checking authentication
+    if (authLoading) return
+
     if (!isAuthenticated) {
       router.push('/sign-in')
       return
@@ -37,14 +45,52 @@ export default function LessonPage() {
     if (!isNaN(journeyId)) {
       loadJourney(journeyId)
     }
-  }, [journeyId, isAuthenticated])
+  }, [journeyId, isAuthenticated, authLoading])
 
-  const lesson = getLessonById(lessonId)
+  // Load lesson details from API
+  useEffect(() => {
+    async function fetchLesson() {
+      setIsLoadingLesson(true)
+      try {
+        const response = await getLesson(lessonId)
+        if (response.success && response.data) {
+          const lessonData = response.data
+
+          // If videoUrl is null (premium course not purchased), redirect to course page
+          if (!lessonData.videoUrl) {
+            setIsRedirecting(true)
+            error('此課程需要購買後才能觀看')
+            setTimeout(() => {
+              router.push(`/journeys/${journeyId}`)
+            }, 1500)
+            // Don't set lesson and don't set loading to false to prevent rendering
+            return
+          }
+
+          // Only set lesson if user has access (videoUrl exists)
+          setLesson(lessonData)
+          setIsLoadingLesson(false)
+        } else {
+          setLesson(null)
+          setIsLoadingLesson(false)
+        }
+      } catch (err) {
+        console.error('Failed to load lesson:', err)
+        setLesson(null)
+        setIsLoadingLesson(false)
+      }
+    }
+
+    if (!isNaN(lessonId) && !authLoading) {
+      fetchLesson()
+    }
+  }, [lessonId, authLoading, journeyId, router])
+
   const progress = progressMap[lessonId]
   const isCompleted = progress?.completed || false
 
-  // 找出上一個和下一個單元
-  const findAdjacentLessons = () => {
+  // 找出上一個和下一個單元 - memoize to avoid recalculation
+  const { prev, next } = React.useMemo(() => {
     if (!currentJourney) return { prev: null, next: null }
 
     const allLessons: number[] = []
@@ -57,21 +103,20 @@ export default function LessonPage() {
       prev: currentIndex > 0 ? allLessons[currentIndex - 1] : null,
       next: currentIndex < allLessons.length - 1 ? allLessons[currentIndex + 1] : null,
     }
-  }
-
-  const { prev, next } = findAdjacentLessons()
+  }, [currentJourney, lessonId])
 
   const handleVideoProgress = async (videoProgress: { currentTime: number; duration: number; percentage: number }) => {
     if (!user || !lesson) return
 
     try {
       await updateProgress(lessonId, {
-        currentTime: videoProgress.currentTime,
-        duration: videoProgress.duration,
+        currentTime: Math.floor(videoProgress.currentTime),
+        duration: Math.floor(videoProgress.duration),
         percentage: videoProgress.percentage,
         lastUpdated: Date.now(),
       })
     } catch (err) {
+      // Silently fail - don't disrupt viewing experience
       console.error('Failed to update progress:', err)
     }
   }
@@ -81,11 +126,13 @@ export default function LessonPage() {
 
     try {
       await updateProgress(lessonId, {
+        currentTime: Math.floor(lesson.videoDuration || 0),
+        duration: Math.floor(lesson.videoDuration || 0),
         percentage: 100,
         completed: true,
         lastUpdated: Date.now(),
       })
-      success('影片已看完！')
+      success('影片已看完！現在可以繳交單元了')
     } catch (err) {
       console.error('Failed to mark as complete:', err)
     }
@@ -94,10 +141,27 @@ export default function LessonPage() {
   const handleSubmit = async () => {
     if (!user || !lesson) return
 
+    // Check if lesson is completed first
+    const lessonProgress = progressMap[lessonId]
+    if (!lessonProgress || !lessonProgress.completed) {
+      error('請先觀看完整影片才能繳交單元')
+      return
+    }
+
     setIsSubmitting(true)
     try {
-      await submitLesson(lessonId)
-      success(`單元繳交成功！獲得 ${lesson.reward.exp} EXP`)
+      const result = await submitLesson(lessonId)
+
+      // Display experience gained from backend response
+      const expGained = (result as any)?.experienceGained || lesson.reward?.exp || 0
+      success(`單元繳交成功！獲得 ${expGained} EXP`)
+
+      // Update user context if user data was returned
+      if ((result as any)?.user) {
+        // User level/exp will be updated in AuthContext
+        // For now, just log it
+        console.log('User updated:', (result as any).user)
+      }
 
       // 自動跳到下一個單元
       if (next) {
@@ -105,18 +169,53 @@ export default function LessonPage() {
           router.push(`/journeys/${journeyId}/chapters/${chapterId}/missions/${next}`)
         }, 1500)
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to submit lesson:', err)
-      error('繳交失敗，請稍後再試')
+      const errorMessage = err?.message || '繳交失敗，請稍後再試'
+      error(errorMessage)
     } finally {
       setIsSubmitting(false)
     }
+  }
+
+  // Show loading state while auth is initializing
+  if (authLoading) {
+    return (
+      <MainLayout>
+        <Section className="py-12">
+          <Container>
+            <div className="flex justify-center items-center min-h-[60vh]">
+              <Spinner size="lg" />
+            </div>
+          </Container>
+        </Section>
+      </MainLayout>
+    )
   }
 
   if (!isAuthenticated) {
     return null
   }
 
+  // Show loading state while fetching lesson or redirecting
+  if (isLoadingLesson || isRedirecting) {
+    return (
+      <MainLayout>
+        <Section className="py-12">
+          <Container>
+            <div className="flex justify-center items-center min-h-[60vh]">
+              <Spinner size="lg" />
+              {isRedirecting && (
+                <p className="mt-4 text-gray-600">正在重定向到課程頁面...</p>
+              )}
+            </div>
+          </Container>
+        </Section>
+      </MainLayout>
+    )
+  }
+
+  // Show empty state if lesson not found
   if (!lesson) {
     return (
       <MainLayout>
@@ -190,7 +289,7 @@ export default function LessonPage() {
                         完成獎勵
                       </div>
                       <div className="text-sm text-primary-700">
-                        {lesson.reward.exp} EXP
+                        {lesson.reward?.exp || 0} EXP
                       </div>
                     </div>
                   </div>
@@ -274,7 +373,7 @@ export default function LessonPage() {
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-600">獎勵 EXP</span>
                     <span className="font-medium text-primary-600">
-                      {lesson.reward.exp}
+                      {lesson.reward?.exp || 0}
                     </span>
                   </div>
                 </div>

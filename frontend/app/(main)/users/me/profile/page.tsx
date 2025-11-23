@@ -24,10 +24,12 @@ import {
 import { OrderHistory } from '@/components/order'
 import { Spinner } from '@/components/ui'
 import { useAuth } from '@/contexts'
+import { usePurchaseHistory } from '@/hooks/usePurchaseHistory'
 
 export default function ProfilePage() {
   const router = useRouter()
   const { user, isAuthenticated, isLoading: authLoading } = useAuth()
+  const { orders, isLoading: ordersLoading } = usePurchaseHistory()
   const [activeTab, setActiveTab] = useState('basic')
 
   useEffect(() => {
@@ -46,21 +48,6 @@ export default function ProfilePage() {
     )
   }
 
-  // Mock 訂單記錄
-  const mockOrders = [
-    {
-      id: '1',
-      orderNumber: '20251121001055504f',
-      courseName: 'AI x BDD：規格驅動全自動化開發術',
-      courseImage: 'https://cdn.waterballsa.tw/courses/ai-bdd.jpg',
-      amount: 7599,
-      discount: 0,
-      finalAmount: 7599,
-      status: 'pending' as const,
-      createdAt: new Date('2025-11-21'),
-      dueDate: new Date('2025-11-24'),
-    },
-  ]
 
   // 渲染不同標籤頁的內容
   const renderTabContent = () => {
@@ -84,7 +71,7 @@ export default function ProfilePage() {
             />
 
             {/* 訂單紀錄 */}
-            <OrderHistory orders={mockOrders} />
+            <OrderHistory orders={orders} />
           </div>
         )
 
