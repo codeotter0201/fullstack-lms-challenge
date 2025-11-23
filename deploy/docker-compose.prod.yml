@@ -1,0 +1,199 @@
+# =============================================================================
+# Docker Compose for Production Deployment with Traefik
+# =============================================================================
+#
+# Architecture:
+#   Internet → Traefik (port 80) → Frontend (port 3000) or Backend (port 8080)
+#                                  ↓
+#                              PostgreSQL (port 5432)
+#
+# Usage:
+#   1. Copy .env.example to .env
+#   2. Edit .env and set DOMAIN to your IP or domain name
+#   3. Run: docker-compose -f docker-compose.prod.yml up -d
+#
+# Access:
+#   - Frontend: http://${DOMAIN}
+#   - Backend API: http://${DOMAIN}/api
+#
+# =============================================================================
+
+version: '3.8'
+
+services:
+  # ---------------------------------------------------------------------------
+  # Traefik - Reverse Proxy
+  # ---------------------------------------------------------------------------
+  traefik:
+    image: traefik:v2.10
+    container_name: waterball-lms-traefik
+    command:
+      # Provider configuration
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+
+      # Entry points
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+
+      # HTTP to HTTPS redirect (only when HTTPS is enabled)
+      - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
+      - "--entrypoints.web.http.redirections.entryPoint.permanent=true"
+
+      # Let's Encrypt configuration
+      - "--certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL:-admin@example.com}"
+      - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge=true"
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
+      # Use staging for testing, production for real certs
+      - "--certificatesresolvers.letsencrypt.acme.caserver=${ACME_CA_SERVER:-https://acme-staging-v02.api.letsencrypt.org/directory}"
+
+      # API and dashboard (optional)
+      - "--api.dashboard=${TRAEFIK_DASHBOARD:-false}"
+      - "--api.insecure=${TRAEFIK_DASHBOARD:-false}"
+
+      # Logging
+      - "--log.level=INFO"
+      - "--accesslog=true"
+    ports:
+      - "80:80"
+      - "443:443"
+      - "${TRAEFIK_DASHBOARD_PORT:-8081}:8080"  # Dashboard port (if enabled)
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./letsencrypt:/letsencrypt
+    networks:
+      - lms-network
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+
+  # ---------------------------------------------------------------------------
+  # PostgreSQL Database
+  # ---------------------------------------------------------------------------
+  postgres:
+    image: postgres:15-alpine
+    container_name: waterball-lms-db-prod
+    environment:
+      POSTGRES_DB: ${DATABASE_NAME:-waterball_lms}
+      POSTGRES_USER: ${DATABASE_USERNAME}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+    volumes:
+      - postgres_data_prod:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USERNAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - lms-network
+
+  # ---------------------------------------------------------------------------
+  # Spring Boot Backend
+  # ---------------------------------------------------------------------------
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    container_name: waterball-lms-backend-prod
+    environment:
+      SPRING_PROFILE: ${SPRING_PROFILE:-prod}
+      DATABASE_URL: jdbc:postgresql://postgres:5432/${DATABASE_NAME:-waterball_lms}
+      DATABASE_USERNAME: ${DATABASE_USERNAME}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION: ${JWT_EXPIRATION:-86400000}
+      SERVER_PORT: 8080
+      # CORS configuration - dynamically set based on ENABLE_HTTPS
+      # This will be processed by entrypoint script
+      DOMAIN: ${DOMAIN:-localhost}
+      ENABLE_HTTPS: ${ENABLE_HTTPS:-false}
+    expose:
+      - "8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+    networks:
+      - lms-network
+    labels:
+      - "traefik.enable=true"
+      # Route /api requests to backend
+      - "traefik.http.routers.backend.rule=Host(`${DOMAIN:-localhost}`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.backend.entrypoints=websecure"
+      - "traefik.http.routers.backend.tls=true"
+      - "traefik.http.routers.backend.tls.certresolver=letsencrypt"
+      - "traefik.http.services.backend.loadbalancer.server.port=8080"
+
+  # ---------------------------------------------------------------------------
+  # Next.js Frontend
+  # ---------------------------------------------------------------------------
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+      args:
+        # Build-time arguments for Next.js
+        # If ENABLE_HTTPS=true, use https, otherwise http
+        NEXT_PUBLIC_API_BASE_URL: ${ENABLE_HTTPS:-false}
+        NEXT_PUBLIC_ENV: ${NEXT_PUBLIC_ENV:-production}
+        NEXT_PUBLIC_USE_REAL_API: ${NEXT_PUBLIC_USE_REAL_API:-true}
+    container_name: waterball-lms-frontend-prod
+    environment:
+      # Runtime environment variables
+      # Dynamically set protocol based on ENABLE_HTTPS
+      NEXT_PUBLIC_API_BASE_URL: ${ENABLE_HTTPS:-false}
+      NEXT_PUBLIC_APP_URL: ${ENABLE_HTTPS:-false}
+      NEXT_PUBLIC_ENV: ${NEXT_PUBLIC_ENV:-production}
+      NEXT_PUBLIC_USE_REAL_API: ${NEXT_PUBLIC_USE_REAL_API:-true}
+      NEXT_PUBLIC_DEBUG: ${NEXT_PUBLIC_DEBUG:-false}
+      DOMAIN: ${DOMAIN:-localhost}
+      ENABLE_HTTPS: ${ENABLE_HTTPS:-false}
+      NODE_ENV: production
+    expose:
+      - "3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped
+    networks:
+      - lms-network
+    labels:
+      - "traefik.enable=true"
+      # Route all other requests to frontend
+      - "traefik.http.routers.frontend.rule=Host(`${DOMAIN:-localhost}`)"
+      - "traefik.http.routers.frontend.entrypoints=websecure"
+      - "traefik.http.routers.frontend.tls=true"
+      - "traefik.http.routers.frontend.tls.certresolver=letsencrypt"
+      # Priority lower than backend so /api routes are handled first
+      - "traefik.http.routers.frontend.priority=1"
+      - "traefik.http.services.frontend.loadbalancer.server.port=3000"
+
+# -----------------------------------------------------------------------------
+# Volumes
+# -----------------------------------------------------------------------------
+volumes:
+  postgres_data_prod:
+    driver: local
+
+# -----------------------------------------------------------------------------
+# Networks
+# -----------------------------------------------------------------------------
+networks:
+  lms-network:
+    driver: bridge
+    name: waterball-lms-network-prod

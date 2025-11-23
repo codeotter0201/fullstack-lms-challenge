@@ -37,3 +37,7 @@ next-env.d.ts
 
 *playwright-profile
 *playwright-mcp
+
+# Docker deployment
+deploy/.env
+deploy/letsencrypt/

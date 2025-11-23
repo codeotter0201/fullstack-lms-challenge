@@ -1,0 +1,260 @@
+# =============================================================================
+# Docker Compose Configuration - Development with Hot Reload
+# =============================================================================
+#
+# 此配置專為「本地開發 + Hot Reload」設計：
+#   - Frontend 掛載本地原始碼，即時反映變更
+#   - Backend 仍使用 Docker 建置（保持環境一致性）
+#   - PostgreSQL 使用 Docker
+#
+# 使用情境：
+#   - 前端開發時需要頻繁修改程式碼
+#   - 不想每次修改都重新建置 Docker image
+#   - 但仍需要完整的後端 API 和資料庫環境
+#
+# 啟動指令:
+#   docker-compose -f docker-compose.dev.yml up -d
+#
+# 停止指令:
+#   docker-compose -f docker-compose.dev.yml down
+#
+# 查看前端日誌:
+#   docker-compose -f docker-compose.dev.yml logs -f frontend-dev
+#
+# =============================================================================
+
+version: '3.8'
+
+services:
+  # ---------------------------------------------------------------------------
+  # PostgreSQL Database（與 docker-compose.yml 相同）
+  # ---------------------------------------------------------------------------
+  postgres:
+    image: postgres:15-alpine
+    container_name: waterball-lms-db-dev
+    environment:
+      POSTGRES_DB: waterball_lms
+      POSTGRES_USER: wblms_user
+      POSTGRES_PASSWORD: WbLms@2024!Dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data_dev:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U wblms_user -d waterball_lms"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - waterball-network-dev
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # Spring Boot Backend（與 docker-compose.yml 相同）
+  # ---------------------------------------------------------------------------
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    container_name: waterball-lms-backend-dev
+    environment:
+      SPRING_PROFILE: dev
+      DATABASE_URL: jdbc:postgresql://postgres:5432/waterball_lms
+      DATABASE_USERNAME: wblms_user
+      DATABASE_PASSWORD: WbLms@2024!Dev
+      JWT_SECRET: dev-secret-key-must-be-at-least-256-bits-long-for-HS256-algorithm-security
+      JWT_EXPIRATION: 86400000
+      SERVER_PORT: 8080
+      # CORS 允許 localhost 和容器內的前端
+      CORS_ALLOWED_ORIGINS: http://localhost:3000,http://frontend-dev:3000
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - waterball-network-dev
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # Next.js Frontend - Development Mode with Hot Reload
+  # ---------------------------------------------------------------------------
+  frontend-dev:
+    image: node:20-alpine
+    container_name: waterball-lms-frontend-dev
+    working_dir: /app
+
+    # 掛載本地原始碼（即時反映變更）
+    volumes:
+      - ../frontend:/app
+      - /app/node_modules          # 使用容器內的 node_modules
+      - /app/.next                  # 使用容器內的 .next
+
+    environment:
+      # API Configuration（瀏覽器通過 localhost 訪問）
+      NEXT_PUBLIC_API_BASE_URL: http://localhost:8080/api
+
+      # Application Configuration
+      NEXT_PUBLIC_ENV: development
+      NEXT_PUBLIC_APP_NAME: Waterball LMS
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+
+      # Feature Flags
+      NEXT_PUBLIC_USE_REAL_API: "false"
+      NEXT_PUBLIC_ENABLE_ANALYTICS: "false"
+      NEXT_PUBLIC_ENABLE_ERROR_REPORTING: "false"
+      NEXT_PUBLIC_DEBUG: "true"
+
+      # Mock Configuration
+      NEXT_PUBLIC_MOCK_DELAY: 500
+
+      # LINE Login Configuration
+      NEXT_PUBLIC_LINE_CLIENT_ID: your_line_channel_id_here
+      NEXT_PUBLIC_LINE_REDIRECT_URI: http://localhost:3000/api/auth/line/callback
+
+      # CDN Configuration
+      NEXT_PUBLIC_CDN_URL: https://cdn.waterballsa.tw
+
+      # Performance
+      NEXT_PUBLIC_IMAGE_QUALITY: 90
+      NEXT_PUBLIC_ENABLE_LAZY_LOADING: "true"
+
+      # Next.js Development Settings
+      WATCHPACK_POLLING: "true"     # 啟用檔案監控（Docker 內部需要）
+      CHOKIDAR_USEPOLLING: "true"   # 啟用 polling（Docker 內部需要）
+
+    # 啟動 Next.js 開發伺服器
+    command: sh -c "npm install && npm run dev"
+
+    ports:
+      - "3000:3000"
+
+    depends_on:
+      backend:
+        condition: service_healthy
+
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 90s  # 開發模式啟動較慢，給予更多時間
+
+    networks:
+      - waterball-network-dev
+
+    restart: unless-stopped
+
+# -----------------------------------------------------------------------------
+# Volumes
+# -----------------------------------------------------------------------------
+volumes:
+  postgres_data_dev:
+    driver: local
+
+# -----------------------------------------------------------------------------
+# Networks
+# -----------------------------------------------------------------------------
+networks:
+  waterball-network-dev:
+    driver: bridge
+    name: waterball-lms-network-dev
+
+# =============================================================================
+# 使用說明
+# =============================================================================
+#
+# 1. 初次啟動：
+#    cd deploy
+#    docker-compose -f docker-compose.dev.yml up -d
+#
+#    等待所有服務啟動完成（查看日誌）：
+#    docker-compose -f docker-compose.dev.yml logs -f frontend-dev
+#
+# 2. 修改前端程式碼：
+#    - 直接在本地 ../frontend 目錄修改
+#    - Next.js 會自動偵測變更並 hot reload
+#    - 瀏覽器自動刷新（Fast Refresh）
+#
+# 3. 修改環境變數：
+#    - 編輯此檔案的 environment 區塊
+#    - 重啟容器: docker-compose -f docker-compose.dev.yml restart frontend-dev
+#
+# 4. 安裝新的 npm 套件：
+#    - 在本地執行: cd ../frontend && npm install <package>
+#    - 重啟容器: docker-compose -f docker-compose.dev.yml restart frontend-dev
+#    或
+#    - 進入容器: docker exec -it waterball-lms-frontend-dev sh
+#    - 執行: npm install <package>
+#
+# 5. 清理並重新啟動：
+#    docker-compose -f docker-compose.dev.yml down
+#    docker-compose -f docker-compose.dev.yml up -d --build
+#
+# 6. 查看日誌：
+#    # 所有服務
+#    docker-compose -f docker-compose.dev.yml logs -f
+#
+#    # 僅前端
+#    docker-compose -f docker-compose.dev.yml logs -f frontend-dev
+#
+#    # 僅後端
+#    docker-compose -f docker-compose.dev.yml logs -f backend
+#
+# =============================================================================
+# 注意事項
+# =============================================================================
+#
+# 1. Volume 掛載：
+#    - 本地 frontend/ 目錄掛載到容器 /app
+#    - node_modules 和 .next 使用容器內版本（避免本地/容器版本衝突）
+#
+# 2. Hot Reload 設定：
+#    - WATCHPACK_POLLING=true 和 CHOKIDAR_USEPOLLING=true 是必須的
+#    - Docker 環境下檔案變更偵測需要 polling 模式
+#
+# 3. 首次啟動較慢：
+#    - 需要安裝 npm dependencies (npm install)
+#    - 首次編譯需要時間
+#    - 預留 90 秒的 start_period
+#
+# 4. Port 衝突：
+#    - 如果本地已經有服務佔用 3000 或 8080 port
+#    - 請修改 ports 配置（例如 "3001:3000"）
+#
+# 5. 與 docker-compose.yml 的差異：
+#    - docker-compose.yml: 建置生產版本的 frontend（優化、最小化）
+#    - docker-compose.dev.yml: 開發模式，支援 hot reload
+#    - 兩者不能同時執行（port 會衝突）
+#
+# 6. 效能：
+#    - 開發模式啟動較慢
+#    - Hot reload 會消耗額外資源
+#    - 適合開發，不適合生產環境
+#
+# =============================================================================
+# CORS 配置重點
+# =============================================================================
+#
+# 1. Backend CORS_ALLOWED_ORIGINS 包含：
+#    - http://localhost:3000 (瀏覽器直接訪問)
+#    - http://frontend-dev:3000 (容器內部通訊)
+#
+# 2. Frontend API URL:
+#    - 使用 http://backend:8080 (容器內部 service name)
+#    - 不使用 localhost（容器內無法解析為 host machine）
+#
+# 3. 瀏覽器訪問流程：
+#    瀏覽器 → http://localhost:3000 (frontend container)
+#    → Container 內的 Next.js fetch → http://backend:8080/api
+#    → Backend container 處理請求
+#    → 檢查 CORS (允許 localhost:3000)
+#    → 回傳資料
+#
+# =============================================================================
