@@ -112,11 +112,11 @@ export default function VerticalSidebar() {
       </div>
 
       {/* 主導航區域 - 分組顯示 */}
-      <nav className="flex-1 space-y-6 overflow-y-auto scrollbar-thin">
+      <nav className="flex-1 space-y-0 overflow-y-auto scrollbar-thin">
         {navGroups.map((group, groupIndex) => (
           <div key={groupIndex}>
             {/* 分組項目 */}
-            <div className="space-y-1">
+            <div className="space-y-1 py-3">
               {group.items.map((item) => {
                 const isActive = pathname === item.href
                 const Icon = item.icon
@@ -139,6 +139,11 @@ export default function VerticalSidebar() {
                 )
               })}
             </div>
+
+            {/* 分隔線 - 不在最後一組顯示 */}
+            {groupIndex < navGroups.length - 1 && (
+              <hr className="border-t border-gray-700/30 my-0" />
+            )}
           </div>
         ))}
       </nav>

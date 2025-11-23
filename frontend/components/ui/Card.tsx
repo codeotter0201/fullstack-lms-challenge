@@ -8,10 +8,11 @@ import { CardProps } from '@/types/ui'
 import { cn } from '@/lib/utils'
 
 const variantStyles = {
-  default: 'bg-white border border-gray-200',
-  elevated: 'bg-white shadow-md',
-  outline: 'bg-white border-2 border-gray-300',
-  flat: 'bg-gray-50',
+  default: 'bg-card border border-card-border',
+  elevated: 'bg-card shadow-md',
+  outline: 'bg-card border-2 border-card-border',
+  flat: 'bg-card-dark',
+  light: 'bg-white border border-gray-200',
 }
 
 const paddingStyles = {
@@ -37,7 +38,7 @@ export default function Card({
       onClick={onClick}
       className={cn(
         // 基礎樣式
-        'rounded-xl',
+        'rounded-lg',
         'transition-all duration-200',
 
         // 變體樣式

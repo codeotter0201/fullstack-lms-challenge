@@ -22,11 +22,17 @@ const config: Config = {
           tertiary: '#1E2330',             // 卡片背景
           hover: '#2D3142',                // 懸停背景
         },
+        card: {
+          DEFAULT: 'rgb(28, 31, 46)',      // 目標網站卡片背景
+          dark: 'rgb(23, 25, 35)',         // 目標網站深色卡片背景
+          border: 'rgb(55, 65, 81)',       // 目標網站卡片邊框
+          hover: 'rgba(45, 49, 66, 0.5)',  // 卡片懸停背景
+        },
         text: {
-          DEFAULT: '#F3F4F6',          // 更新為目標網站值
-          primary: '#F3F4F6',          // 更新為目標網站值
-          secondary: '#A0AEC0',        // 更新為目標網站值
-          muted: '#6B6D7F',
+          DEFAULT: '#F3F4F6',          // rgb(243, 244, 246)
+          primary: '#F3F4F6',          // rgb(243, 244, 246)
+          secondary: '#A0AEC0',        // 次要文字
+          muted: '#A3A3A3',            // rgb(163, 163, 163)
           disabled: '#4A4C5E',
         },
         button: {
@@ -40,7 +46,7 @@ const config: Config = {
           locked: '#6B7280',
         },
         border: {
-          DEFAULT: '#4A5568',           // 更新為目標網站值
+          DEFAULT: 'rgb(55, 65, 81)',      // 目標網站邊框
           hover: '#4A4D62',
           focus: '#FFD700',
         },
@@ -64,10 +70,10 @@ const config: Config = {
       borderRadius: {
         none: '0px',
         sm: '4px',
-        md: '6px',              // 更新為 6px（目標網站按鈕圓角）
-        lg: '12px',
+        md: '6px',              // 按鈕圓角
+        lg: '8px',              // 卡片圓角（目標網站）
         xl: '16px',
-        '2xl': '24px',
+        '2xl': '20px',          // 側邊欄選單項目
         full: '9999px',
       },
       boxShadow: {

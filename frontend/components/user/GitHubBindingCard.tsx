@@ -46,22 +46,22 @@ export function GitHubBindingCard({
   courseRepos = defaultCourseRepos,
 }: GitHubBindingCardProps) {
   return (
-    <Card className="p-6 bg-[#1E2028] space-y-6">
+    <Card className="shadow-md space-y-6">
       {/* Header */}
       <div className="mb-4">
-        <h3 className="text-lg font-bold text-white mb-2">GitHub 帳號</h3>
-        <p className="text-sm text-gray-400">綁定 GitHub 帳號後，可享受更多功能</p>
+        <h3 className="text-lg font-bold text-text-primary mb-2">GitHub 帳號</h3>
+        <p className="text-sm text-text-secondary">綁定 GitHub 帳號後，可享受更多功能</p>
       </div>
 
       {/* Binding Status */}
-      <div className="flex items-center justify-between p-4 bg-gray-800 rounded-lg">
+      <div className="flex items-center justify-between p-4 bg-card-dark rounded-lg">
         <div className="flex items-center gap-4">
           {/* GitHub Icon */}
-          <div className="w-12 h-12 rounded-full bg-gray-700 flex items-center justify-center">
-            <Github className="w-8 h-8 text-gray-400" />
+          <div className="w-12 h-12 rounded-full bg-background-tertiary flex items-center justify-center">
+            <Github className="w-8 h-8 text-text-muted" />
           </div>
           <div>
-            <p className="text-white font-medium">
+            <p className="text-text-primary font-medium">
               {isBound ? 'GitHub 帳號已綁定' : '尚未綁定 GitHub 帳號'}
             </p>
           </div>
@@ -70,7 +70,7 @@ export function GitHubBindingCard({
         {!isBound && (
           <button
             onClick={onBind}
-            className="flex items-center gap-2 px-4 py-2 border-2 border-[#FFD700] text-[#FFD700] rounded-lg hover:bg-[#FFD700] hover:text-gray-900 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-primary text-button-text rounded-md hover:bg-primary-hover transition-colors"
           >
             <Github className="w-4 h-4" />
             <span>綁定 GitHub</span>
@@ -80,12 +80,12 @@ export function GitHubBindingCard({
 
       {/* Course GitHub Repos Section */}
       <div className="mt-6">
-        <h3 className="text-lg font-bold text-white mb-4">課程 GitHub Repos</h3>
+        <h3 className="text-lg font-bold text-text-primary mb-4">課程 GitHub Repos</h3>
 
         {/* Alert Box */}
-        <div className="flex gap-3 p-4 bg-yellow-900/20 border border-yellow-700/30 rounded-lg mb-4">
-          <AlertCircle className="w-5 h-5 text-[#FFD700] flex-shrink-0 mt-0.5" />
-          <p className="text-[#FFD700] text-sm font-medium">
+        <div className="flex gap-3 p-4 bg-card-dark border border-card-border rounded-lg mb-4">
+          <AlertCircle className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+          <p className="text-text-primary text-sm font-medium">
             購買 AI x BDD 課程後，即可加入以下課程專屬的 GitHub Repos！
           </p>
         </div>
@@ -95,16 +95,16 @@ export function GitHubBindingCard({
           {courseRepos.map((repo, index) => (
             <div
               key={index}
-              className="flex items-center justify-between p-4 bg-gray-800 rounded-lg"
+              className="flex items-center justify-between p-4 bg-card border border-card-border rounded-lg hover:bg-card-hover transition-colors"
             >
               <div className="flex-1">
-                <h4 className="text-white font-medium mb-1">{repo.name}</h4>
-                <p className="text-sm text-gray-400 mb-2">{repo.repoPath}</p>
-                <p className="text-xs text-gray-500">{repo.description}</p>
+                <h4 className="text-text-primary font-medium mb-1">{repo.name}</h4>
+                <p className="text-sm text-text-secondary mb-2">{repo.repoPath}</p>
+                <p className="text-xs text-text-muted">{repo.description}</p>
               </div>
               <button
                 disabled={!repo.isPurchased}
-                className="ml-4 px-4 py-2 bg-gray-700 text-gray-400 rounded-lg cursor-not-allowed"
+                className="ml-4 px-4 py-2 bg-primary text-button-text rounded-md opacity-50 cursor-not-allowed"
               >
                 特定課程專屬
               </button>

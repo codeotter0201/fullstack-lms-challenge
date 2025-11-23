@@ -18,7 +18,7 @@ export let currentUser: User = {
   level: 12,
   exp: 6500,
   nextLevelExp: 2000,
-  pictureUrl: 'https://lh3.googleusercontent.com/a/default-user',
+  pictureUrl: '/blog/avatar.webp',
   roles: [UserRole.STUDENT_FREE],
   primaryRole: UserRole.STUDENT_FREE,
 
@@ -49,7 +49,7 @@ export const mockUsers: User[] = [
     level: 12,
     exp: 6500,
     nextLevelExp: 2000,
-    pictureUrl: 'https://lh3.googleusercontent.com/a/default-user',
+    pictureUrl: '/blog/avatar.webp',
     roles: [UserRole.STUDENT_FREE],
     primaryRole: UserRole.STUDENT_FREE,
     birthday: '1995-06-15',

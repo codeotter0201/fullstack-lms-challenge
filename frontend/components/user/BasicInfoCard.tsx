@@ -40,13 +40,13 @@ export function BasicInfoCard({ user, onEdit }: BasicInfoCardProps) {
   ]
 
   return (
-    <Card className="p-6 bg-[#1E2028]">
+    <Card className="shadow-md">
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
-        <h3 className="text-lg font-bold text-white">基本資料</h3>
+        <h3 className="text-lg font-bold text-text-primary">基本資料</h3>
         <button
           onClick={onEdit}
-          className="flex items-center gap-2 px-4 py-2 border-2 border-[#FFD700] text-[#FFD700] rounded-lg hover:bg-[#FFD700] hover:text-gray-900 transition-colors"
+          className="flex items-center gap-2 px-4 py-2 border border-primary text-primary rounded-md hover:bg-primary hover:text-button-text transition-colors"
         >
           <Edit className="w-4 h-4" />
           <span>編輯資料</span>
@@ -60,10 +60,10 @@ export function BasicInfoCard({ user, onEdit }: BasicInfoCardProps) {
           {leftFields.map((field, index) => (
             <div key={index}>
               {field.label && (
-                <div className="text-sm text-gray-400 mb-1">{field.label}</div>
+                <div className="text-sm text-text-secondary mb-1">{field.label}</div>
               )}
               {field.value && (
-                <div className="text-white">{field.value}</div>
+                <div className="text-text-primary">{field.value}</div>
               )}
             </div>
           ))}
@@ -74,10 +74,10 @@ export function BasicInfoCard({ user, onEdit }: BasicInfoCardProps) {
           {rightFields.map((field, index) => (
             <div key={index}>
               {field.label && (
-                <div className="text-sm text-gray-400 mb-1">{field.label}</div>
+                <div className="text-sm text-text-secondary mb-1">{field.label}</div>
               )}
               {field.value && (
-                <div className="text-white">{field.value}</div>
+                <div className="text-text-primary">{field.value}</div>
               )}
             </div>
           ))}

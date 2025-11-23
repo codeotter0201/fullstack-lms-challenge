@@ -5,6 +5,7 @@
  */
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { cn } from '@/lib/utils'
 
 interface LogoProps {
@@ -14,9 +15,15 @@ interface LogoProps {
 }
 
 const sizeStyles = {
-  sm: 'h-6',
-  md: 'h-8',
-  lg: 'h-10',
+  sm: 'h-8 w-8',
+  md: 'h-12 w-12',
+  lg: 'h-32 w-32',
+}
+
+const imageSizes = {
+  sm: 32,
+  md: 48,
+  lg: 80,
 }
 
 const textSizeStyles = {
@@ -34,26 +41,26 @@ export default function Logo({
     <Link
       href="/"
       className={cn(
-        'flex items-center gap-2',
+        'flex items-center gap-3',
         'hover:opacity-80 transition-opacity',
         className
       )}
     >
-      {/* Logo 圖示 (使用文字代替，實際專案可替換為圖片) */}
-      <div className={cn(
-        'bg-primary-500 text-white',
-        'flex items-center justify-center',
-        'rounded-lg font-bold',
-        'px-2',
-        sizeStyles[size]
-      )}>
-        <span className={textSizeStyles[size]}>W</span>
+      {/* Logo 圖片 */}
+      <div className={cn('relative', sizeStyles[size])}>
+        <Image
+          src="/images/logo.png"
+          alt="Waterball Logo"
+          fill
+          className="object-contain"
+          priority
+        />
       </div>
 
       {/* Logo 文字 */}
       {showText && (
         <span className={cn(
-          'font-bold text-gray-900',
+          'font-bold text-text',
           textSizeStyles[size]
         )}>
           Waterball

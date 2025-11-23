@@ -48,7 +48,15 @@ export class ApiClientError extends Error {
  * 建立完整的 URL（含查詢參數）
  */
 function buildUrl(path: string, params?: Record<string, string | number | boolean>): string {
-  const url = new URL(path, BASE_URL)
+  // 確保 BASE_URL 和 path 正確拼接
+  // BASE_URL: http://localhost:8080/api
+  // path: /auth/login
+  // 結果: http://localhost:8080/api/auth/login
+  const baseUrl = BASE_URL.endsWith('/') ? BASE_URL.slice(0, -1) : BASE_URL
+  const cleanPath = path.startsWith('/') ? path : `/${path}`
+  const fullUrl = `${baseUrl}${cleanPath}`
+
+  const url = new URL(fullUrl)
 
   if (params) {
     Object.entries(params).forEach(([key, value]) => {
@@ -100,15 +108,25 @@ async function handleResponse<T>(response: Response): Promise<ApiResponse<T>> {
 
   // 成功回應
   if (response.ok) {
-    return data as ApiResponse<T>
+    // 後端直接返回資料，包裝成 ApiResponse 格式
+    return {
+      success: true,
+      data: data as T,
+      timestamp: Date.now(),
+    }
   }
 
   // 錯誤回應
   const error: ApiError = isJson
-    ? data
+    ? {
+        code: data.error || `HTTP_${response.status}`,
+        message: data.message || response.statusText,
+        statusCode: response.status,
+      }
     : {
         code: `HTTP_${response.status}`,
         message: data || response.statusText,
+        statusCode: response.status,
       }
 
   throw new ApiClientError(
@@ -126,10 +144,6 @@ async function request<T>(
   config: RequestConfig
 ): Promise<ApiResponse<T>> {
   try {
-    // R1: Mock 模式 - 不發送真實請求
-    // 在 R1 階段，所有 API 呼叫都應該在各自的模組中被攔截並返回 Mock 資料
-    // 這裡只是為了完整性而保留結構
-
     const url = buildUrl(path, config.params)
     const headers = buildHeaders(config.headers)
 
@@ -143,16 +157,9 @@ async function request<T>(
       fetchConfig.body = JSON.stringify(config.body)
     }
 
-    // R2: 發送請求
-    // const response = await fetch(url, fetchConfig)
-    // return handleResponse<T>(response)
-
-    // R1: 暫時返回空回應（實際使用會在各 API 模組中被 Mock 資料取代）
-    console.warn(`[API Client] R1 Mode: ${config.method} ${path} (will use mock data)`)
-    return {
-      success: true,
-      data: {} as T,
-    }
+    // R2: 發送真實請求
+    const response = await fetch(url, fetchConfig)
+    return handleResponse<T>(response)
   } catch (error) {
     // 網路錯誤或其他異常
     if (error instanceof ApiClientError) {

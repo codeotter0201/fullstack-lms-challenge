@@ -12,7 +12,7 @@ import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui'
 
 interface SocialAccount {
-  platform: 'discord' | 'github' | 'line' | 'google' | 'facebook'
+  platform: 'discord' | 'github' | 'google' | 'facebook'
   label: string
   icon: string
   color: string
@@ -40,13 +40,6 @@ const defaultAccounts: SocialAccount[] = [
     label: 'GitHub',
     icon: '🐙',
     color: 'bg-gray-100/10 border-gray-500/30',
-    isConnected: false,
-  },
-  {
-    platform: 'line',
-    label: 'LINE',
-    icon: '💬',
-    color: 'bg-[#00B900]/10 border-[#00B900]/30',
     isConnected: false,
   },
   {

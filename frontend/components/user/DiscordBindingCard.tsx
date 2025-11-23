@@ -17,22 +17,22 @@ export interface DiscordBindingCardProps {
 
 export function DiscordBindingCard({ isBound = false, onBind }: DiscordBindingCardProps) {
   return (
-    <Card className="p-6 bg-[#1E2028]">
+    <Card className="shadow-md">
       {/* Header */}
       <div className="mb-4">
-        <h3 className="text-lg font-bold text-white mb-2">Discord 帳號綁定</h3>
-        <p className="text-sm text-gray-400">
+        <h3 className="text-lg font-bold text-text-primary mb-2">Discord 帳號綁定</h3>
+        <p className="text-sm text-text-secondary">
           沒有獲得學號或身份組嗎？ 點此登入存取
         </p>
       </div>
 
       {/* Binding Status */}
-      <div className="flex items-center justify-between p-4 bg-gray-800 rounded-lg">
+      <div className="flex items-center justify-between p-4 bg-card-dark rounded-lg">
         <div className="flex items-center gap-4">
           {/* Discord Icon */}
-          <div className="w-12 h-12 rounded-full bg-gray-700 flex items-center justify-center">
+          <div className="w-12 h-12 rounded-full bg-background-tertiary flex items-center justify-center">
             <svg
-              className="w-8 h-8 text-gray-400"
+              className="w-8 h-8 text-text-muted"
               viewBox="0 0 24 24"
               fill="currentColor"
             >
@@ -40,7 +40,7 @@ export function DiscordBindingCard({ isBound = false, onBind }: DiscordBindingCa
             </svg>
           </div>
           <div>
-            <p className="text-white font-medium">
+            <p className="text-text-primary font-medium">
               {isBound ? 'Discord 帳號已綁定' : '尚未綁定 Discord 帳號'}
             </p>
           </div>
@@ -49,7 +49,7 @@ export function DiscordBindingCard({ isBound = false, onBind }: DiscordBindingCa
         {!isBound && (
           <button
             onClick={onBind}
-            className="flex items-center gap-2 px-4 py-2 border-2 border-[#FFD700] text-[#FFD700] rounded-lg hover:bg-[#FFD700] hover:text-gray-900 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-primary text-button-text rounded-md hover:bg-primary-hover transition-colors"
           >
             <svg
               className="w-4 h-4"

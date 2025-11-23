@@ -93,28 +93,6 @@ export async function updateUser(
 }
 
 /**
- * 綁定 LINE 帳號
- */
-export async function bindLineAccount(
-  userId: string,
-  lineUserId: string
-): Promise<{ success: boolean; message: string }> {
-  // R1: Mock
-  await new Promise(resolve => setTimeout(resolve, 300))
-
-  return {
-    success: true,
-    message: 'LINE 帳號綁定成功',
-  }
-
-  // R2 TODO: 真實 API 呼叫
-  // return apiClient.post<{ success: boolean; message: string }>(
-  //   `/users/${userId}/bind-line`,
-  //   { lineUserId }
-  // )
-}
-
-/**
  * 獲取用戶統計資訊
  */
 export async function getUserStats(userId: string): Promise<{

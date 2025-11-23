@@ -37,7 +37,7 @@ export default function Tabs({
       <div
         className={cn(
           'flex',
-          type === 'line' && 'border-b border-gray-200',
+          type === 'line' && 'border-b border-card-border',
           centered && 'justify-center',
           type === 'card' && 'gap-2'
         )}
@@ -61,18 +61,18 @@ export default function Tabs({
                 // Line 樣式
                 type === 'line' && [
                   'border-b-2',
-                  'hover:text-primary-500',
+                  'hover:text-primary',
                   isActive
-                    ? 'border-primary-500 text-primary-500'
-                    : 'border-transparent text-gray-600',
+                    ? 'border-primary text-primary'
+                    : 'border-transparent text-text-secondary',
                 ],
 
                 // Card 樣式
                 type === 'card' && [
                   'rounded-lg',
                   isActive
-                    ? 'bg-primary-500 text-white'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200',
+                    ? 'bg-primary text-background'
+                    : 'bg-card-dark text-text-secondary hover:bg-background-hover',
                 ],
 
                 // 禁用狀態
@@ -87,7 +87,7 @@ export default function Tabs({
       </div>
 
       {/* 內容區 */}
-      <div className="mt-4">
+      <div className="mt-4 min-h-[280px] transition-all duration-300 ease-in-out">
         {currentItem?.content}
       </div>
     </div>

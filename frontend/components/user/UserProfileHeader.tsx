@@ -21,7 +21,7 @@ export function UserProfileHeader({ user }: UserProfileHeaderProps) {
   return (
     <div className="flex flex-col items-center py-8">
       <Avatar
-        src={user.avatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=default'}
+        src={user.pictureUrl || '/blog/avatar.webp'}
         alt={displayName}
         size="3xl"
         className="mb-4"

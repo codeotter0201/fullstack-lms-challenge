@@ -40,7 +40,7 @@ const paymentMethods = [
     id: 'mobile' as PaymentMethod,
     name: '行動支付',
     icon: Smartphone,
-    description: 'LINE Pay、街口支付',
+    description: '街口支付',
   },
 ]
 

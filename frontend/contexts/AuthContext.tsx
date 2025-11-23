@@ -2,41 +2,78 @@
  * AuthContext 認證上下文
  *
  * 管理用戶認證狀態、登入/登出功能
- * R1: 使用 Mock 資料模擬
- * R2: 整合真實 LINE Login API
+ * R2: 串接真實後端 API
  */
 
 'use client'
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
-import { User } from '@/types/user'
-import { currentUser } from '@/lib/mock/users'
+import { User, UserRole, Occupation } from '@/types/user'
+import * as authApi from '@/lib/api/auth'
 
 interface AuthContextType {
   user: User | null
   isAuthenticated: boolean
   isLoading: boolean
-  login: (lineToken?: string) => Promise<void>
+  error: string | null
+  login: (email: string, password: string) => Promise<void>
+  register: (email: string, password: string, displayName: string) => Promise<void>
   logout: () => Promise<void>
   updateUser: (updates: Partial<User>) => void
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
+/**
+ * 將後端 UserDTO 轉換為前端 User 型別
+ */
+function mapBackendUserToFrontend(backendUser: any): User {
+  return {
+    id: backendUser.id,
+    email: backendUser.email,
+    name: backendUser.displayName || backendUser.email.split('@')[0],
+    nickname: backendUser.displayName,
+    occupation: Occupation.PROGRAMMER, // 後端暫無此欄位，使用預設值
+    level: backendUser.level || 1,
+    exp: backendUser.experience || 0,
+    nextLevelExp: (backendUser.level || 1) * 1000, // 每級需要 1000 EXP
+    pictureUrl: backendUser.avatarUrl || '/blog/avatar.webp',
+    roles: backendUser.isPremium ? [UserRole.STUDENT_PAID] : [UserRole.STUDENT_FREE],
+    primaryRole: backendUser.isPremium ? UserRole.STUDENT_PAID : UserRole.STUDENT_FREE,
+    birthday: undefined,
+    gender: undefined,
+    region: undefined,
+    githubLink: undefined,
+  }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   // 初始化：從 localStorage 載入用戶狀態
   useEffect(() => {
     const initAuth = async () => {
       try {
-        // R1: 從 localStorage 檢查是否有保存的登入狀態
-        const savedUserId = localStorage.getItem('userId')
+        const accessToken = localStorage.getItem('accessToken')
 
-        if (savedUserId) {
-          // R1: 使用 Mock 用戶
-          setUser(currentUser)
+        if (accessToken) {
+          // 嘗試使用 token 取得用戶資訊
+          try {
+            const response = await authApi.getCurrentUser()
+            if (response.success && response.data) {
+              const mappedUser = mapBackendUserToFrontend(response.data)
+              setUser(mappedUser)
+            } else {
+              // Token 無效，清除
+              localStorage.removeItem('accessToken')
+            }
+          } catch (err) {
+            // Token 過期或無效
+            localStorage.removeItem('accessToken')
+            console.error('Failed to get current user:', err)
+          }
         }
       } catch (error) {
         console.error('Failed to initialize auth:', error)
@@ -50,34 +87,63 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   /**
    * 登入功能
-   * R1: 使用 Mock 資料
-   * R2: 整合 LINE Login API
+   * 使用 email + password 登入
    */
-  const login = async (lineToken?: string) => {
+  const login = async (email: string, password: string) => {
     setIsLoading(true)
+    setError(null)
     try {
-      // R1: Mock 登入邏輯
-      // 模擬 API 延遲
-      await new Promise(resolve => setTimeout(resolve, 500))
+      const response = await authApi.login(email, password)
 
-      // 使用 Mock 用戶
-      setUser(currentUser)
+      if (response.success && response.data) {
+        const { user: backendUser, accessToken } = response.data
 
-      // 保存到 localStorage
-      localStorage.setItem('userId', currentUser.id.toString())
+        // 轉換用戶資料
+        const mappedUser = mapBackendUserToFrontend(backendUser)
+        setUser(mappedUser)
 
-      // R2 TODO: 整合真實 LINE Login
-      // const response = await fetch('/api/auth/line', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ token: lineToken }),
-      // })
-      // const data = await response.json()
-      // setUser(data.user)
-      // localStorage.setItem('accessToken', data.accessToken)
-    } catch (error) {
+        // 儲存 JWT token
+        localStorage.setItem('accessToken', accessToken)
+      } else {
+        throw new Error(response.error?.message || '登入失敗')
+      }
+    } catch (error: any) {
+      const errorMessage = error?.response?.data?.message || error?.message || '登入失敗，請檢查您的電子郵件和密碼'
+      setError(errorMessage)
       console.error('Login failed:', error)
-      throw error
+      throw new Error(errorMessage)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  /**
+   * 註冊功能
+   * 建立新帳號
+   */
+  const register = async (email: string, password: string, displayName: string) => {
+    setIsLoading(true)
+    setError(null)
+    try {
+      const response = await authApi.register(email, password, displayName)
+
+      if (response.success && response.data) {
+        const { user: backendUser, accessToken } = response.data
+
+        // 轉換用戶資料
+        const mappedUser = mapBackendUserToFrontend(backendUser)
+        setUser(mappedUser)
+
+        // 儲存 JWT token
+        localStorage.setItem('accessToken', accessToken)
+      } else {
+        throw new Error(response.error?.message || '註冊失敗')
+      }
+    } catch (error: any) {
+      const errorMessage = error?.response?.data?.message || error?.message || '註冊失敗，請稍後再試'
+      setError(errorMessage)
+      console.error('Register failed:', error)
+      throw new Error(errorMessage)
     } finally {
       setIsLoading(false)
     }
@@ -89,19 +155,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = async () => {
     setIsLoading(true)
     try {
-      // R1: Mock 登出邏輯
-      await new Promise(resolve => setTimeout(resolve, 300))
+      await authApi.logout()
 
       // 清除狀態
       setUser(null)
-      localStorage.removeItem('userId')
-
-      // R2 TODO: 呼叫登出 API
-      // await fetch('/api/auth/logout', { method: 'POST' })
-      // localStorage.removeItem('accessToken')
+      setError(null)
+      localStorage.removeItem('accessToken')
     } catch (error) {
       console.error('Logout failed:', error)
-      throw error
+      // 即使 API 失敗也要清除本地狀態
+      setUser(null)
+      localStorage.removeItem('accessToken')
     } finally {
       setIsLoading(false)
     }
@@ -112,22 +176,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
    */
   const updateUser = (updates: Partial<User>) => {
     if (!user) return
-
     setUser(prev => prev ? { ...prev, ...updates } : null)
-
-    // R2 TODO: 同步更新到後端
-    // await fetch('/api/users/me', {
-    //   method: 'PATCH',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify(updates),
-    // })
+    // R3 TODO: 同步更新到後端
   }
 
   const value: AuthContextType = {
     user,
     isAuthenticated: !!user,
     isLoading,
+    error,
     login,
+    register,
     logout,
     updateUser,
   }

@@ -33,6 +33,7 @@ export interface Journey {
   slug: string                // URL slug (e.g., "software-design-pattern")
   description?: string
   thumbnailUrl?: string       // 課程封面圖
+  imageUrl?: string           // 課程圖片 URL (與 thumbnailUrl 同義)
   createdAt: number          // 時間戳
   skills: Skill[]
   chapters: Chapter[]
