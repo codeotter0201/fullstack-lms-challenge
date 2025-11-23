@@ -275,15 +275,31 @@ export default function VideoPlayer({
   // 組件卸載時清理
   useEffect(() => {
     return () => {
+      // 清理進度追蹤定時器
       if (progressIntervalRef.current) {
         clearInterval(progressIntervalRef.current)
+        progressIntervalRef.current = null
       }
 
-      // 卸載前保存最後的進度
-      reportProgress()
+      // 卸載前保存最後的進度（safely）
+      try {
+        reportProgress()
+      } catch (err) {
+        // Ignore errors during cleanup
+      }
 
-      if (playerRef.current && playerRef.current.destroy) {
-        playerRef.current.destroy()
+      // 銷毀 YouTube player
+      if (playerRef.current) {
+        try {
+          if (typeof playerRef.current.destroy === 'function') {
+            playerRef.current.destroy()
+          }
+        } catch (err) {
+          // Ignore errors during cleanup
+          console.warn('Error destroying player:', err)
+        } finally {
+          playerRef.current = null
+        }
       }
     }
   }, [])

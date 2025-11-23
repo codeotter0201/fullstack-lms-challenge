@@ -286,6 +286,7 @@ export default function LessonPage() {
                   const videoId = extractYouTubeId(lesson.videoUrl || null)
                   return videoId ? (
                     <VideoPlayer
+                      key={`video-${lessonId}-${videoId}`}
                       videoId={videoId}
                       onProgress={handleVideoProgress}
                       onComplete={handleVideoComplete}
