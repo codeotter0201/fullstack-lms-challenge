@@ -6,6 +6,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
+
 @Data
 @Builder
 @NoArgsConstructor
@@ -17,6 +19,7 @@ public class CourseDTO {
     private String description;
     private String thumbnailUrl;
     private Boolean isPremium;
+    private BigDecimal price;
     private Integer totalLessons;
     private Integer displayOrder;
 
@@ -27,6 +30,7 @@ public class CourseDTO {
                 .description(course.getDescription())
                 .thumbnailUrl(course.getThumbnailUrl())
                 .isPremium(course.getIsPremium())
+                .price(course.getPrice())
                 .totalLessons(course.getTotalLessons())
                 .displayOrder(course.getDisplayOrder())
                 .build();

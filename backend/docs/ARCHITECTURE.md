@@ -90,28 +90,53 @@
 ### 課程系統 (Course)
 
 **組件:**
-- `CourseController`: 課程與單元 API
-- `CourseService`: 課程業務邏輯
+- `CourseController`: 課程與單元 API (公開 GET 端點)
+- `CourseService`: 課程業務邏輯與影片內容保護
+- `PurchaseService`: 購買記錄與存取權限檢查
 - `Course` & `Lesson` Entity
 
-**權限控制:**
+**公開 API 設計:**
 ```java
-// Service 層過濾課程
-public List<CourseDTO> getCourses(String email) {
-    User user = getUserByEmail(email);
+// 課程列表 - 公開 API (無需認證)
+public List<CourseDTO> getAllCourses(String userEmail) {
+    // userEmail 可能為 null (訪客)
+    // 所有已發布的課程都顯示，不過濾
+    return courseRepository.findAllByIsPublishedTrueOrderByDisplayOrder()
+        .stream()
+        .map(CourseDTO::from)
+        .toList();
+}
 
-    List<Course> courses;
-    if (user.getIsPremium()) {
-        // 付費用戶: 所有課程
-        courses = courseRepository.findAllByIsPublishedTrueOrderByDisplayOrder();
-    } else {
-        // 免費用戶: 只顯示免費課程
-        courses = courseRepository.findByIsPremiumFalseAndIsPublishedTrueOrderByDisplayOrder();
+// 課程單元 - 公開 API，但影片 URL 有條件保護
+public List<LessonDTO> getCourseLessons(Long courseId, String userEmail) {
+    // 檢查存取權限
+    boolean hasAccess = false;
+    if (userEmail != null) {
+        User user = getUserByEmail(userEmail);
+        // 免費課程 OR 已購買付費課程
+        hasAccess = purchaseService.hasAccess(user.getId(), courseId);
     }
 
-    return courses.stream()
-            .map(CourseDTO::from)
-            .toList();
+    // 根據存取權限決定是否返回影片 URL
+    return lessons.stream()
+        .map(lesson -> LessonDTO.from(lesson, hasAccess))
+        .toList();
+}
+```
+
+**存取權限邏輯:**
+```java
+// PurchaseService.hasAccess()
+public boolean hasAccess(Long userId, Long courseId) {
+    Course course = courseRepository.findById(courseId).orElseThrow();
+
+    // 免費課程: 所有人都可以存取
+    if (!course.getIsPremium()) {
+        return true;
+    }
+
+    // 付費課程: 檢查購買記錄
+    return purchaseRepository.existsByUserIdAndCourseId(userId, courseId);
 }
 ```
 
@@ -241,21 +266,54 @@ http.authorizeHttpRequests(auth -> auth
         "/swagger-ui/**",
         "/v3/api-docs/**"
     ).permitAll()
+    // 課程相關 API 公開 (GET only)
+    .requestMatchers(HttpMethod.GET, "/api/courses/**").permitAll()
     .anyRequest().authenticated()
 );
 ```
 
+**重點說明:**
+- **公開 API**: `GET /api/courses/**` 所有人都可以存取 (包含訪客)
+- **需要認證**: 購買、進度更新、交付等寫操作
+- **條件式內容保護**: 影片 URL 根據購買狀態動態隱藏
+
 **Service 層權限檢查:**
 ```java
-// 檢查課程訪問權限
-if (course.getIsPremium() && !user.getIsPremium()) {
-    throw new IllegalArgumentException("Premium course requires subscription");
+// 檢查影片內容存取權限 (條件式)
+public List<LessonDTO> getCourseLessons(Long courseId, String userEmail) {
+    // userEmail 可能為 null (訪客)
+    boolean hasAccess = false;
+    if (userEmail != null) {
+        User user = getUserByEmail(userEmail);
+        hasAccess = purchaseService.hasAccess(user.getId(), courseId);
+    }
+
+    // 根據 hasAccess 決定是否返回影片 URL
+    return lessons.stream()
+        .map(lesson -> LessonDTO.from(lesson, hasAccess))
+        .toList();
 }
 
 // 檢查資源擁有權
 if (!resource.getUser().getId().equals(user.getId())) {
     throw new IllegalArgumentException("No permission to access this resource");
 }
+```
+
+**影片內容保護邏輯:**
+```java
+// LessonDTO.from(lesson, includeVideoInfo)
+public static LessonDTO from(Lesson lesson, boolean includeVideoInfo) {
+    return LessonDTO.builder()
+        .videoUrl(includeVideoInfo ? lesson.getVideoUrl() : null)
+        .videoDuration(includeVideoInfo ? lesson.getVideoDuration() : null)
+        .build();
+}
+
+// includeVideoInfo 決定條件:
+// - 免費課程 (isPremium = false): true (所有人)
+// - 付費課程 + 已購買: true (已認證且已購買)
+// - 付費課程 + 未購買/訪客: false (隱藏影片 URL)
 ```
 
 ## 異常處理

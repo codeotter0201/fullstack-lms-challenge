@@ -96,10 +96,12 @@ DELETE /api/resources/{id}     # 刪除
 }
 ```
 
-### 課程 API (需要 Token)
+### 課程 API (公開 API - 無需 Token)
 
 #### GET /api/courses
-取得課程列表 (根據用戶權限過濾)
+取得所有已發布課程列表
+
+**認證:** 無需認證 (公開 API)
 
 **Response:**
 ```json
@@ -110,16 +112,88 @@ DELETE /api/resources/{id}     # 刪除
     "description": "從零開始學習 Java",
     "thumbnailUrl": "https://example.com/thumbnail.jpg",
     "isPremium": false,
-    "totalLessons": 3,
+    "price": 0,
+    "totalLessons": 10,
     "displayOrder": 1
+  },
+  {
+    "id": 2,
+    "title": "Spring Boot 實戰",
+    "description": "企業級應用開發",
+    "thumbnailUrl": "https://example.com/spring.jpg",
+    "isPremium": true,
+    "price": 2990.00,
+    "totalLessons": 12,
+    "displayOrder": 2
   }
 ]
 ```
 
+**說明:**
+- 訪客和已登入用戶都可以瀏覽所有已發布的課程
+- 顯示課程基本資訊、價格、是否為付費課程
+- 用於課程列表頁、首頁推薦等場景
+
+---
+
+#### GET /api/courses/{courseId}
+取得課程詳情
+
+**認證:** 無需認證 (公開 API)
+
+**Path Parameters:**
+- `courseId` (Long, required) - 課程 ID
+
+**Response:**
+```json
+{
+  "id": 1,
+  "title": "Java 基礎入門",
+  "description": "從零開始學習 Java 程式設計，適合完全沒有程式基礎的初學者",
+  "thumbnailUrl": "https://example.com/thumbnail.jpg",
+  "isPremium": false,
+  "price": 0,
+  "isPublished": true,
+  "displayOrder": 1
+}
+```
+
+**說明:**
+- 任何人都可以查看課程詳情
+- 用於課程介紹頁
+
+---
+
 #### GET /api/courses/{courseId}/lessons
 取得課程的所有單元
 
-**Response:**
+**認證:** 無需認證 (公開 API)
+
+**Path Parameters:**
+- `courseId` (Long, required) - 課程 ID
+
+**Response (訪客或未購買用戶):**
+```json
+[
+  {
+    "id": 1,
+    "courseId": 1,
+    "title": "Java 環境安裝",
+    "description": "學習如何安裝 JDK",
+    "type": "VIDEO",
+    "videoUrl": null,
+    "videoDuration": null,
+    "displayOrder": 1,
+    "experienceReward": 200,
+    "progressPercentage": 0,
+    "lastPosition": 0,
+    "isCompleted": false,
+    "isSubmitted": false
+  }
+]
+```
+
+**Response (已購買或免費課程):**
 ```json
 [
   {
@@ -132,18 +206,37 @@ DELETE /api/resources/{id}     # 刪除
     "videoDuration": 600,
     "displayOrder": 1,
     "experienceReward": 200,
-    "progressPercentage": 0,
-    "lastPosition": 0,
+    "progressPercentage": 50,
+    "lastPosition": 300,
     "isCompleted": false,
     "isSubmitted": false
   }
 ]
 ```
 
+**說明:**
+- **所有人都可以看到單元列表** (標題、描述、順序)
+- **影片資訊 (`videoUrl`, `videoDuration`) 有條件顯示:**
+  - 免費課程 (`isPremium = false`): 所有人都可以看到
+  - 付費課程 (`isPremium = true`): 只有已購買的用戶可以看到
+  - 未授權用戶會看到 `null`
+- **進度資訊**: 只有已登入用戶會顯示個人進度
+
+---
+
 #### GET /api/courses/lessons/{lessonId}
 取得單元詳情
 
-**Response:** 同單元對象格式
+**認證:** 無需認證 (公開 API)
+
+**Path Parameters:**
+- `lessonId` (Long, required) - 單元 ID
+
+**Response:** 同上方單元對象格式
+
+**說明:**
+- 影片資訊 (`videoUrl`, `videoDuration`) 的顯示規則與上方相同
+- 未購買付費課程的用戶無法看到影片 URL
 
 ### 進度 API (需要 Token)
 
@@ -624,14 +717,27 @@ public class ResourceService {
 ### 存取控制邏輯
 
 ```
-用戶存取課程
+用戶瀏覽課程列表/詳情
     ↓
-免費課程? ──Yes──→ 允許存取
+公開 API - 所有人都可以看到課程資訊
+    ↓
+用戶點擊課程單元
+    ↓
+免費課程? ──Yes──→ 顯示影片 URL (所有人)
     ↓ No
-已購買? ──Yes──→ 允許存取
+已登入? ──No──→ 隱藏影片 URL (顯示 null)
+    ↓ Yes
+已購買? ──Yes──→ 顯示影片 URL
     ↓ No
-拒絕存取 (顯示購買按鈕)
+隱藏影片 URL (顯示購買按鈕)
 ```
+
+**重點:**
+- **課程列表、課程詳情、單元列表** - 公開 API，任何人都可以看到
+- **影片 URL** - 根據課程類型和購買狀態決定是否顯示
+  - 免費課程: 所有人都可以看到影片 URL
+  - 付費課程: 只有已購買的已登入用戶可以看到影片 URL
+  - 訪客和未購買用戶: `videoUrl` 和 `videoDuration` 返回 `null`
 
 ### 購買流程
 

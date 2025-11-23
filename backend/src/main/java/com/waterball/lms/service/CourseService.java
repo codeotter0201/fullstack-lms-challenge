@@ -30,11 +30,7 @@ public class CourseService {
 
     @Transactional(readOnly = true)
     public List<CourseDTO> getAllCourses(String userEmail) {
-        User user = userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
-
-        // All users can see all published courses
-        // Access control is checked when viewing course details
+        // Public API - guests can view all published courses
         List<Course> courses = courseRepository.findAllByIsPublishedTrueOrderByDisplayOrderAsc();
 
         return courses.stream()
@@ -44,44 +40,46 @@ public class CourseService {
 
     @Transactional(readOnly = true)
     public CourseDTO getCourse(Long courseId, String userEmail) {
-        User user = userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
-
         Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> new IllegalArgumentException("Course not found"));
 
-        // Check access: free course OR purchased
-        if (!purchaseService.hasAccess(user.getId(), courseId)) {
-            throw new IllegalArgumentException("Course requires purchase");
-        }
-
+        // Public API - guests can view course info (just no video URLs in lessons)
         return CourseDTO.from(course);
     }
 
     @Transactional(readOnly = true)
     public List<LessonDTO> getCourseLessons(Long courseId, String userEmail) {
-        User user = userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
-
         Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> new IllegalArgumentException("Course not found"));
 
-        // Check access: free course OR purchased
-        if (!purchaseService.hasAccess(user.getId(), courseId)) {
-            throw new IllegalArgumentException("Course requires purchase");
+        // Check if user has access to video content
+        boolean hasAccess = false;
+        Long userId = null;
+        if (userEmail != null) {
+            User user = userRepository.findByEmail(userEmail).orElse(null);
+            if (user != null) {
+                userId = user.getId();
+                hasAccess = purchaseService.hasAccess(userId, courseId);
+            }
         }
 
         List<Lesson> lessons = lessonRepository.findByCourseIdAndIsPublishedTrueOrderByDisplayOrderAsc(courseId);
 
-        // 查詢用戶的進度
-        List<Progress> progressList = progressRepository.findByUserIdAndLessonCourseId(user.getId(), courseId);
-        Map<Long, Progress> progressMap = progressList.stream()
-                .collect(Collectors.toMap(p -> p.getLesson().getId(), p -> p));
+        // 查詢用戶的進度 (only if authenticated)
+        Map<Long, Progress> progressMap = Map.of();
+        if (userId != null) {
+            List<Progress> progressList = progressRepository.findByUserIdAndLessonCourseId(userId, courseId);
+            progressMap = progressList.stream()
+                    .collect(Collectors.toMap(p -> p.getLesson().getId(), p -> p));
+        }
+
+        final Map<Long, Progress> finalProgressMap = progressMap;
+        final boolean includeVideoInfo = hasAccess;
 
         return lessons.stream()
                 .map(lesson -> {
-                    LessonDTO dto = LessonDTO.from(lesson);
-                    Progress progress = progressMap.get(lesson.getId());
+                    LessonDTO dto = LessonDTO.from(lesson, includeVideoInfo);
+                    Progress progress = finalProgressMap.get(lesson.getId());
                     if (progress != null) {
                         dto.setProgressPercentage(progress.getProgressPercentage());
                         dto.setLastPosition(progress.getLastPosition());
@@ -100,30 +98,40 @@ public class CourseService {
 
     @Transactional(readOnly = true)
     public LessonDTO getLesson(Long lessonId, String userEmail) {
-        User user = userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
-
         Lesson lesson = lessonRepository.findById(lessonId)
                 .orElseThrow(() -> new IllegalArgumentException("Lesson not found"));
 
         Course course = lesson.getCourse();
 
-        // Check access: free course OR purchased
-        if (!purchaseService.hasAccess(user.getId(), course.getId())) {
-            throw new IllegalArgumentException("Course requires purchase");
+        // Check if user has access to video content
+        boolean hasAccess = false;
+        Long userId = null;
+        if (userEmail != null) {
+            User user = userRepository.findByEmail(userEmail).orElse(null);
+            if (user != null) {
+                userId = user.getId();
+                hasAccess = purchaseService.hasAccess(userId, course.getId());
+            }
         }
 
-        LessonDTO dto = LessonDTO.from(lesson);
+        LessonDTO dto = LessonDTO.from(lesson, hasAccess);
 
-        // 查詢進度
-        Progress progress = progressRepository.findByUserIdAndLessonId(user.getId(), lessonId)
-                .orElse(null);
+        // 查詢進度 (only if authenticated)
+        if (userId != null) {
+            Progress progress = progressRepository.findByUserIdAndLessonId(userId, lessonId)
+                    .orElse(null);
 
-        if (progress != null) {
-            dto.setProgressPercentage(progress.getProgressPercentage());
-            dto.setLastPosition(progress.getLastPosition());
-            dto.setIsCompleted(progress.getIsCompleted());
-            dto.setIsSubmitted(progress.getIsSubmitted());
+            if (progress != null) {
+                dto.setProgressPercentage(progress.getProgressPercentage());
+                dto.setLastPosition(progress.getLastPosition());
+                dto.setIsCompleted(progress.getIsCompleted());
+                dto.setIsSubmitted(progress.getIsSubmitted());
+            } else {
+                dto.setProgressPercentage(0);
+                dto.setLastPosition(0);
+                dto.setIsCompleted(false);
+                dto.setIsSubmitted(false);
+            }
         } else {
             dto.setProgressPercentage(0);
             dto.setLastPosition(0);

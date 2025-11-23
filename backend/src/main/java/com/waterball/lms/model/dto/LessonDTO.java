@@ -30,14 +30,18 @@ public class LessonDTO {
     private Boolean isSubmitted;
 
     public static LessonDTO from(Lesson lesson) {
+        return from(lesson, true);
+    }
+
+    public static LessonDTO from(Lesson lesson, boolean includeVideoInfo) {
         return LessonDTO.builder()
                 .id(lesson.getId())
                 .courseId(lesson.getCourse().getId())
                 .title(lesson.getTitle())
                 .description(lesson.getDescription())
                 .type(lesson.getType().name())
-                .videoUrl(lesson.getVideoUrl())
-                .videoDuration(lesson.getVideoDuration())
+                .videoUrl(includeVideoInfo ? lesson.getVideoUrl() : null)
+                .videoDuration(includeVideoInfo ? lesson.getVideoDuration() : null)
                 .content(lesson.getContent())
                 .displayOrder(lesson.getDisplayOrder())
                 .experienceReward(lesson.getExperienceReward())

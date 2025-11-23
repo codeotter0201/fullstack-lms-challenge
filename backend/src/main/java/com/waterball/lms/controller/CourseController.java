@@ -21,39 +21,39 @@ public class CourseController {
     private final CourseService courseService;
 
     @GetMapping
-    @Operation(summary = "取得所有課程列表", description = "根據用戶權限顯示課程 (免費/付費)")
+    @Operation(summary = "取得所有課程列表", description = "公開 API - 所有人都可以瀏覽課程列表")
     public ResponseEntity<List<CourseDTO>> getAllCourses(Authentication authentication) {
-        String email = authentication.getName();
+        String email = authentication != null ? authentication.getName() : null;
         List<CourseDTO> courses = courseService.getAllCourses(email);
         return ResponseEntity.ok(courses);
     }
 
     @GetMapping("/{courseId}")
-    @Operation(summary = "取得課程詳情", description = "取得單一課程的詳細資訊")
+    @Operation(summary = "取得課程詳情", description = "公開 API - 未購買用戶無法看到影片資訊")
     public ResponseEntity<CourseDTO> getCourse(
             @PathVariable Long courseId,
             Authentication authentication) {
-        String email = authentication.getName();
+        String email = authentication != null ? authentication.getName() : null;
         CourseDTO course = courseService.getCourse(courseId, email);
         return ResponseEntity.ok(course);
     }
 
     @GetMapping("/{courseId}/lessons")
-    @Operation(summary = "取得課程的所有單元", description = "包含用戶的學習進度資訊")
+    @Operation(summary = "取得課程的所有單元", description = "公開 API - 未購買用戶無法看到影片資訊")
     public ResponseEntity<List<LessonDTO>> getCourseLessons(
             @PathVariable Long courseId,
             Authentication authentication) {
-        String email = authentication.getName();
+        String email = authentication != null ? authentication.getName() : null;
         List<LessonDTO> lessons = courseService.getCourseLessons(courseId, email);
         return ResponseEntity.ok(lessons);
     }
 
     @GetMapping("/lessons/{lessonId}")
-    @Operation(summary = "取得單元詳情", description = "取得單一單元的詳細資訊與進度")
+    @Operation(summary = "取得單元詳情", description = "公開 API - 未購買用戶無法看到影片資訊")
     public ResponseEntity<LessonDTO> getLesson(
             @PathVariable Long lessonId,
             Authentication authentication) {
-        String email = authentication.getName();
+        String email = authentication != null ? authentication.getName() : null;
         LessonDTO lesson = courseService.getLesson(lessonId, email);
         return ResponseEntity.ok(lesson);
     }

@@ -77,10 +77,15 @@ COMMENT ON COLUMN courses.price IS 'Course price in TWD (0 for free courses)';
 -- =============================================================================
 
 -- Migrate all existing user roles to user_roles table
+-- Map STUDENT -> FREE (old role system compatibility)
 INSERT INTO user_roles (user_id, role, granted_at, created_at, updated_at)
 SELECT
     id,
-    role,
+    CASE
+        WHEN role = 'STUDENT' THEN 'FREE'
+        WHEN role IN ('ADMIN', 'TEACHER') THEN role
+        ELSE 'FREE'
+    END,
     created_at,
     created_at,
     updated_at
@@ -115,14 +120,14 @@ ON CONFLICT (user_id, role) DO NOTHING;
 -- 5. Update test data: Set prices for existing courses
 -- =============================================================================
 
--- Set prices for premium courses (based on V2 test data if exists)
+-- Set prices for premium courses based on title
 UPDATE courses
 SET price = CASE
-    WHEN id = 1 THEN 2990.00  -- Java 入門課程
-    WHEN id = 2 THEN 3990.00  -- Spring Boot 實戰
-    WHEN id = 3 THEN 4990.00  -- 微服務架構
-    ELSE price
-END
-WHERE is_premium = true;
+    WHEN title = 'Spring Boot 實戰' THEN 2990.00
+    WHEN title = 'React 前端開發' THEN 3990.00
+    WHEN title = 'Python 資料科學' THEN 4990.00
+    WHEN is_premium = true THEN 2990.00  -- Default for other premium courses
+    ELSE 0
+END;
 
--- Free courses remain at price = 0 (already set by default)
+-- Free courses (Java 基礎入門) already have price = 0 from default
