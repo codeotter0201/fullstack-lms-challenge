@@ -27,24 +27,20 @@ export default function HomePage() {
     loadJourneys()
   }, [loadJourneys])
 
-  // 課程資料
-  const courseImages = [
-    '/world/courses/course_0.png',
-    '/world/courses/course_4.png'
-  ]
-
+  // 轉換課程資料 - 顯示前 2 個課程
   const courses = journeys.slice(0, 2).map((journey, index) => ({
     id: journey.id,
     slug: journey.slug,
-    name: journey.name,
-    description: journey.description,
-    imageUrl: courseImages[index] || '/images/course-placeholder.png',
+    name: journey.name || journey.title || '未命名課程',
+    description: journey.description || '暫無描述',
+    imageUrl: journey.imageUrl || journey.thumbnailUrl || '/images/course-placeholder.png',
     instructor: '水球潘',
     isSelected: index === selectedCourseIndex,
+    isPremium: journey.isPremium,
     promotionalText: index === 0
       ? '看完課程介紹，立刻折價 3,000 元'
       : null,
-    ctaText: index === 0 ? '立刻體驗' : '立刻購買',
+    ctaText: journey.isPremium ? '立刻購買' : '立刻體驗',
     ctaVariant: index === 0 ? 'outline' : 'primary',
   }))
 
@@ -101,12 +97,12 @@ export default function HomePage() {
 
                 {/* Course Content */}
                 <div className="space-y-2 p-4 flex-grow">
-                  <h3 className="text-base font-semibold leading-tight">
+                  <h3 className="text-base font-semibold leading-tight text-foreground">
                     {course.name}
                   </h3>
                   <div className="flex justify-between items-center">
                     <div className="flex-shrink-0">
-                      <div className="text-base font-bold text-yellow-400">
+                      <div className="text-base font-bold text-primary">
                         {course.instructor}
                       </div>
                     </div>

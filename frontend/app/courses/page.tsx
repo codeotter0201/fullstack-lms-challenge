@@ -23,14 +23,15 @@ export default function CoursesPage() {
   const featuredCourses = journeys.map((journey) => ({
     id: journey.id,
     slug: journey.slug,
-    name: journey.name,
-    description: journey.description,
-    imageUrl: journey.imageUrl,
+    name: journey.name || journey.title || '未命名課程',
+    description: journey.description || '暫無描述',
+    imageUrl: journey.imageUrl || journey.thumbnailUrl, // 優先使用 imageUrl，否則使用 thumbnailUrl
     instructor: '水球潘',
     studentCount: 1250,
     rating: 4.8,
-    price: 3980,
-    discountedPrice: 3480,
+    price: journey.price || 3980,
+    discountedPrice: journey.price ? journey.price - 500 : 3480,
+    isPremium: journey.isPremium,
     isOwned: ownedJourneys?.some((owned) => owned.id === journey.id) || false,
   }))
 

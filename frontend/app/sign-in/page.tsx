@@ -11,7 +11,7 @@ import { useRouter } from 'next/navigation'
 import { Container, Logo } from '@/components/layout'
 import { Button, Card, Input, Tabs } from '@/components/ui'
 import { useAuth, useToast } from '@/contexts'
-import { LogIn, UserPlus, Mail, Lock, User } from 'lucide-react'
+import { LogIn, UserPlus, Mail, Lock, User, ArrowLeft } from 'lucide-react'
 
 export default function SignInPage() {
   const router = useRouter()
@@ -231,6 +231,18 @@ export default function SignInPage() {
     <div className="min-h-screen bg-gradient-to-br from-background via-background-secondary to-background-tertiary flex items-center justify-center p-4">
       <Container className="max-w-md">
         <Card className="p-8 shadow-[0_0_60px_rgba(0,0,0,0.5)] bg-card border border-card-border">
+          {/* Back Button */}
+          <div className="mb-6">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => router.push('/')}
+              icon={<ArrowLeft className="w-4 h-4" />}
+            >
+              返回首頁
+            </Button>
+          </div>
+
           {/* Header */}
           <div className="text-center mb-6">
             <h1 className="text-2xl font-bold text-text mb-3">

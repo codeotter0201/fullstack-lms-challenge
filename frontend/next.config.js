@@ -2,7 +2,6 @@
 const nextConfig = {
   // 圖片優化設定
   images: {
-    domains: ['cdn.waterballsa.tw', 'lh3.googleusercontent.com', 'world.waterballsa.tw', 'api.dicebear.com'],
     remotePatterns: [
       {
         protocol: 'https',
@@ -19,6 +18,14 @@ const nextConfig = {
       {
         protocol: 'https',
         hostname: 'api.dicebear.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'images.unsplash.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'example.com',
       },
     ],
   },

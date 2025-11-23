@@ -24,16 +24,32 @@ export default function JourneyDetailPage() {
   const router = useRouter()
   const { user, isAuthenticated } = useAuth()
   const { showToast } = useToast()
-  const { currentJourney, progressMap, loadJourney, checkAccess, isLoading } = useJourney()
+  const { currentJourney, progressMap, loadJourney, checkAccess, isLoading, setSelectedJourney, journeys } = useJourney()
   const [activeChapterId, setActiveChapterId] = useState<string | null>(null)
 
   const journeySlug = params.journeySlug as string
 
   useEffect(() => {
-    // Load journey by slug (in real app, API would handle slug lookup)
-    const mockJourneyId = journeySlug === 'software-design-pattern' ? 1 : 2
-    loadJourney(mockJourneyId)
-  }, [journeySlug])
+    // Parse journey ID - can be either numeric ID or slug
+    let journeyId: number
+
+    // Check if journeySlug is a number
+    if (!isNaN(Number(journeySlug))) {
+      journeyId = Number(journeySlug)
+    } else {
+      // Handle slug (legacy support)
+      journeyId = journeySlug === 'software-design-pattern' ? 1 : 2
+    }
+
+    loadJourney(journeyId)
+  }, [journeySlug, loadJourney])
+
+  // Update selectedJourney when currentJourney loads
+  useEffect(() => {
+    if (currentJourney) {
+      setSelectedJourney(currentJourney)
+    }
+  }, [currentJourney, setSelectedJourney])
 
   if (isLoading) {
     return (

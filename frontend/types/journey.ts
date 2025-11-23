@@ -29,11 +29,12 @@ export interface Skill {
  */
 export interface Journey {
   id: number
-  name: string
-  slug: string                // URL slug (e.g., "software-design-pattern")
+  title?: string             // 課程標題 (from backend)
+  name: string               // 課程名稱 (legacy, same as title)
+  slug: string               // URL slug (e.g., "software-design-pattern")
   description?: string
-  thumbnailUrl?: string       // 課程封面圖
-  imageUrl?: string           // 課程圖片 URL (與 thumbnailUrl 同義)
+  thumbnailUrl?: string      // 課程封面圖
+  imageUrl?: string          // 課程圖片 URL (與 thumbnailUrl 同義)
   createdAt: number          // 時間戳
   skills: Skill[]
   chapters: Chapter[]
@@ -45,6 +46,11 @@ export interface Journey {
   isPremium: boolean         // 是否為付費課程
   hasDiscount: boolean       // 是否有折價券
   discountAmount?: number    // 折價金額
+
+  // Backend fields
+  price?: number             // 課程價格 (from backend)
+  displayOrder?: number      // 顯示順序 (from backend)
+  totalLessons?: number      // 總單元數 (from backend, same as videoCount)
 }
 
 /**
@@ -83,17 +89,29 @@ export enum GymType {
  */
 export interface Lesson {
   id: number
-  chapterId: number
-  journeyId: number
-  name: string
+  chapterId?: number         // 章節 ID (frontend virtual, optional)
+  journeyId?: number         // 課程 ID (legacy, same as courseId)
+  courseId?: number          // 課程 ID (from backend)
+  title?: string             // 單元標題 (from backend)
+  name: string               // 單元名稱 (legacy, same as title)
   description?: string
-  premiumOnly: boolean       // 是否僅付費會員可觀看
-  type: LessonType
-  createdAt: number
-  reward: Reward
-  videoLength?: string       // 影片長度 (e.g., "08:33")
-  videoUrl?: string          // 影片 URL (YouTube ID or HLS URL)
-  order: number              // 單元順序
+  premiumOnly?: boolean      // 是否僅付費會員可觀看
+  type: LessonType | string  // 單元類型
+  createdAt?: number         // 時間戳
+  reward?: Reward            // 獎勵物件 (legacy)
+  experienceReward?: number  // 經驗值獎勵 (from backend)
+  videoLength?: string       // 影片長度 (e.g., "08:33", formatted)
+  videoDuration?: number     // 影片時長 (秒數, from backend)
+  videoUrl?: string          // 影片 URL (YouTube ID or full URL)
+  content?: string           // 內容 (from backend)
+  order?: number             // 單元順序 (legacy)
+  displayOrder?: number      // 顯示順序 (from backend)
+
+  // Progress fields (from backend)
+  progressPercentage?: number // 進度百分比
+  lastPosition?: number       // 最後播放位置 (秒數)
+  isCompleted?: boolean       // 是否完成
+  isSubmitted?: boolean       // 是否已繳交
 }
 
 /**

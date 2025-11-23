@@ -26,74 +26,83 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/contexts/AuthContext'
-
-// 導航項目分組 - 完全符合目標網站的 3 組結構和圖示
-const navGroups = [
-  {
-    title: '核心功能',
-    items: [
-      {
-        label: '首頁',
-        href: '/',
-        icon: House,  // 使用 House 替換 Home
-      },
-      {
-        label: '課程',
-        href: '/courses',
-        icon: LayoutDashboard,  // 使用 LayoutDashboard 替換 BookOpen
-      },
-      {
-        label: '個人檔案',
-        href: '/users/me/profile',
-        icon: UserRoundPen,  // 使用 UserRoundPen 替換 User
-      },
-    ],
-  },
-  {
-    title: '社群功能',
-    items: [
-      {
-        label: '排行榜',
-        href: '/leaderboard',
-        icon: Trophy,
-      },
-      {
-        label: '獎勵任務',
-        href: '/journeys/software-design-pattern/missions',  // 修正路徑
-        icon: Gift,  // 使用 Gift 替換 Award
-      },
-      {
-        label: '挑戰歷程',
-        href: '/users/me/portfolio',
-        icon: SquareChartGantt,  // 使用 SquareChartGantt 替換 TrendingUp
-      },
-    ],
-  },
-  {
-    title: '課程相關',
-    items: [
-      {
-        label: '所有單元',
-        href: '/journeys/software-design-pattern',  // 修正路徑
-        icon: Album,  // 使用 Album 替換 List
-      },
-      {
-        label: '挑戰地圖',
-        href: '/journeys/software-design-pattern/roadmap',  // 修正路徑
-        icon: Map,
-      },
-      {
-        label: 'SOP 寶典',
-        href: '/journeys/software-design-pattern/sop',  // 修正路徑
-        icon: BookText,
-      },
-    ],
-  },
-]
+import { useJourney } from '@/contexts/JourneyContext'
 
 export default function VerticalSidebar() {
   const pathname = usePathname()
-  const { user } = useAuth()
+  const { user, isAuthenticated } = useAuth()
+  const { selectedJourney, journeys } = useJourney()
+
+  // 使用 selectedJourney 或預設課程的 ID
+  const currentJourneyId = selectedJourney?.id || journeys[0]?.id || 1
+
+  // 導航項目分組 - 根據登入狀態動態顯示
+  const navGroups = [
+    {
+      title: '核心功能',
+      items: [
+        {
+          label: '首頁',
+          href: '/',
+          icon: House,
+        },
+        {
+          label: '課程',
+          href: '/courses',
+          icon: LayoutDashboard,
+        },
+        // 只有登入才顯示個人檔案
+        ...(isAuthenticated ? [{
+          label: '個人檔案',
+          href: '/users/me/profile',
+          icon: UserRoundPen,
+        }] : []),
+      ],
+    },
+    {
+      title: '社群功能',
+      items: [
+        {
+          label: '排行榜',
+          href: '/leaderboard',
+          icon: Trophy,
+        },
+        // 只有登入才顯示獎勵任務和挑戰歷程
+        ...(isAuthenticated ? [
+          {
+            label: '獎勵任務',
+            href: `/journeys/${currentJourneyId}/missions`,
+            icon: Gift,
+          },
+          {
+            label: '挑戰歷程',
+            href: '/users/me/portfolio',
+            icon: SquareChartGantt,
+          },
+        ] : []),
+      ],
+    },
+    {
+      title: '課程相關',
+      items: [
+        {
+          label: '所有單元',
+          href: `/journeys/${currentJourneyId}`,
+          icon: Album,
+        },
+        {
+          label: '挑戰地圖',
+          href: `/journeys/${currentJourneyId}/roadmap`,
+          icon: Map,
+        },
+        {
+          label: 'SOP 寶典',
+          href: `/journeys/${currentJourneyId}/sop`,
+          icon: BookText,
+        },
+      ],
+    },
+  ]
 
   return (
     <aside className="w-[235px] h-full bg-[#1A1D2E] flex flex-col p-4">

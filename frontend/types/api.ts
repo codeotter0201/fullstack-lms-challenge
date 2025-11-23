@@ -165,12 +165,17 @@ export type BindAccountResponse = ApiResponse<{ bound: boolean }>
 /**
  * 獲取課程列表回應
  */
-export type GetJourneysResponse = ApiResponse<PaginatedResponse<Journey>>
+export type GetJourneysResponse = ApiResponse<{
+  journeys: Journey[]
+  total: number
+}>
 
 /**
  * 獲取單一課程回應
  */
-export type GetJourneyResponse = ApiResponse<Journey>
+export type GetJourneyResponse = ApiResponse<{
+  journey: Journey
+}>
 
 /**
  * 獲取課程技能回應

@@ -8,17 +8,17 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
-import { Menu, X, Bell, Settings } from 'lucide-react'
+import { Menu, X, Bell, Settings, ChevronDown } from 'lucide-react'
 import Logo from './Logo'
 import { Avatar, Badge, Dropdown } from '@/components/ui'
 import { currentUser } from '@/lib/mock/users'
 import { DropdownItem } from '@/types/ui'
+import { useJourney } from '@/contexts'
 
 const navLinks = [
   { href: '/', label: '首頁' },
-  { href: '/journeys', label: '課程' },
   { href: '/leaderboard', label: '排行榜' },
   { href: '/about', label: '關於' },
 ]
@@ -26,6 +26,37 @@ const navLinks = [
 export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const pathname = usePathname()
+  const router = useRouter()
+  const { journeys, selectedJourney, setSelectedJourney, isLoading } = useJourney()
+
+  // 課程下拉選單項目
+  const courseMenuItems: DropdownItem[] = [
+    {
+      key: 'all-courses',
+      label: '所有課程',
+      onClick: () => {
+        setSelectedJourney(null)
+        router.push('/journeys')
+      },
+    },
+    ...(journeys.length > 0
+      ? [
+          {
+            key: 'divider-courses',
+            label: '',
+            divider: true,
+          },
+        ]
+      : []),
+    ...journeys.map((journey) => ({
+      key: `course-${journey.id}`,
+      label: journey.name,
+      onClick: () => {
+        setSelectedJourney(journey)
+        router.push(`/journeys/${journey.id}`)
+      },
+    })),
+  ]
 
   // 用戶下拉選單項目
   const userMenuItems: DropdownItem[] = [
@@ -81,6 +112,23 @@ export default function Navbar() {
                   </Link>
                 )
               })}
+
+              {/* 課程下拉選單 */}
+              <Dropdown items={courseMenuItems} placement="bottom-start">
+                <button
+                  className={cn(
+                    'flex items-center gap-1 px-4 py-2 rounded-lg',
+                    'font-medium text-sm',
+                    'transition-colors duration-200',
+                    pathname.startsWith('/journeys')
+                      ? 'bg-primary-50 text-primary-600'
+                      : 'text-gray-700 hover:bg-gray-100'
+                  )}
+                >
+                  <span>{selectedJourney ? selectedJourney.name : '課程'}</span>
+                  <ChevronDown className="w-4 h-4" />
+                </button>
+              </Dropdown>
             </div>
           </div>
 
@@ -189,6 +237,50 @@ export default function Navbar() {
                 </Link>
               )
             })}
+
+            {/* 課程選單 */}
+            <div className="space-y-1">
+              <div className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase">
+                課程
+              </div>
+              <Link
+                href="/journeys"
+                onClick={() => {
+                  setSelectedJourney(null)
+                  setMobileMenuOpen(false)
+                }}
+                className={cn(
+                  'block px-4 py-3 rounded-lg',
+                  'font-medium',
+                  'transition-colors duration-200',
+                  !selectedJourney && pathname === '/journeys'
+                    ? 'bg-primary-50 text-primary-600'
+                    : 'text-gray-700 hover:bg-gray-100'
+                )}
+              >
+                所有課程
+              </Link>
+              {journeys.map((journey) => (
+                <Link
+                  key={journey.id}
+                  href={`/journeys/${journey.id}`}
+                  onClick={() => {
+                    setSelectedJourney(journey)
+                    setMobileMenuOpen(false)
+                  }}
+                  className={cn(
+                    'block px-4 py-3 rounded-lg',
+                    'font-medium text-sm',
+                    'transition-colors duration-200',
+                    selectedJourney?.id === journey.id
+                      ? 'bg-primary-50 text-primary-600'
+                      : 'text-gray-700 hover:bg-gray-100'
+                  )}
+                >
+                  {journey.name}
+                </Link>
+              ))}
+            </div>
 
             {/* 其他選項 */}
             <div className="pt-4 border-t border-gray-200 space-y-2">

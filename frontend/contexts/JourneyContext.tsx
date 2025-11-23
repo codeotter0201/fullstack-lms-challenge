@@ -2,7 +2,6 @@
  * JourneyContext 課程上下文
  *
  * 管理課程資料、進度追蹤
- * R1: 使用 Mock 資料
  * R2: 整合真實 API
  */
 
@@ -11,24 +10,15 @@
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react'
 import { Journey, Chapter, Lesson } from '@/types/journey'
 import { LessonProgress, GymChallengeRecord } from '@/types/lesson'
-import {
-  journeys,
-  getJourneyById,
-  getLessonById,
-  hasJourneyAccess,
-} from '@/lib/mock/journeys'
-import {
-  userLessonProgress,
-  getLessonProgress,
-  updateLessonProgress,
-  deliverLesson,
-} from '@/lib/mock/progress'
 import { useAuth } from './AuthContext'
+import { getJourneys, getJourney, getJourneyProgress } from '@/lib/api/journeys'
+import { getMyPurchases, checkAccess as checkCourseAccess } from '@/lib/api/purchases'
 
 interface JourneyContextType {
   // 資料
   journeys: Journey[]
   currentJourney: Journey | null
+  selectedJourney: Journey | null
   ownedJourneys: Journey[]
   progressMap: Record<number, LessonProgress>
 
@@ -38,6 +28,7 @@ interface JourneyContextType {
   // 方法
   loadJourney: (journeyId: number) => Promise<void>
   loadJourneys: () => Promise<void>
+  setSelectedJourney: (journey: Journey | null) => void
   updateProgress: (lessonId: number, progress: Partial<LessonProgress>) => Promise<void>
   submitLesson: (lessonId: number) => Promise<void>
   unlockChapter: (chapterId: number, password: string) => Promise<boolean>
@@ -50,6 +41,7 @@ export function JourneyProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth()
   const [allJourneys, setAllJourneys] = useState<Journey[]>([])
   const [currentJourney, setCurrentJourney] = useState<Journey | null>(null)
+  const [selectedJourney, setSelectedJourney] = useState<Journey | null>(null)
   const [ownedJourneys, setOwnedJourneys] = useState<Journey[]>([])
   const [progressMap, setProgressMap] = useState<Record<number, LessonProgress>>({})
   const [isLoading, setIsLoading] = useState(false)
@@ -60,25 +52,48 @@ export function JourneyProvider({ children }: { children: ReactNode }) {
   const loadJourneys = useCallback(async () => {
     setIsLoading(true)
     try {
-      // R1: 使用 Mock 資料
-      await new Promise(resolve => setTimeout(resolve, 300))
-      setAllJourneys(journeys)
+      // Fetch all courses from backend
+      const response = await getJourneys()
 
-      // 設置擁有的課程（R1: Mock - 假設用戶擁有所有課程的訪問權限）
-      if (user) {
-        const owned = journeys.filter(journey => hasJourneyAccess(user.id, journey.id))
-        setOwnedJourneys(owned)
-      } else {
+      if (!response.success || !response.data) {
+        console.error('Failed to load journeys:', response.error)
+        setAllJourneys([])
         setOwnedJourneys([])
+        return
       }
 
-      // R2 TODO: 從 API 載入
-      // const response = await fetch('/api/journeys')
-      // const data = await response.json()
-      // setAllJourneys(data.journeys)
-      // setOwnedJourneys(data.ownedJourneys)
+      const allCourses = response.data.journeys
+      setAllJourneys(allCourses)
+
+      // Determine owned courses based on user login and purchases
+      if (user) {
+        // Fetch user's purchases
+        const purchasesResponse = await getMyPurchases()
+
+        if (purchasesResponse.success && purchasesResponse.data) {
+          const purchasedCourseIds = new Set(
+            purchasesResponse.data.map((p) => p.courseId)
+          )
+
+          // Owned = free courses + purchased premium courses
+          const owned = allCourses.filter(
+            (journey) => !journey.isPremium || purchasedCourseIds.has(journey.id)
+          )
+          setOwnedJourneys(owned)
+        } else {
+          // If can't fetch purchases, assume only free courses
+          const freeCourses = allCourses.filter((journey) => !journey.isPremium)
+          setOwnedJourneys(freeCourses)
+        }
+      } else {
+        // Not logged in: only show free courses as accessible
+        const freeCourses = allCourses.filter((journey) => !journey.isPremium)
+        setOwnedJourneys(freeCourses)
+      }
     } catch (error) {
       console.error('Failed to load journeys:', error)
+      setAllJourneys([])
+      setOwnedJourneys([])
     } finally {
       setIsLoading(false)
     }
@@ -87,43 +102,46 @@ export function JourneyProvider({ children }: { children: ReactNode }) {
   /**
    * 載入特定課程及其進度
    */
-  const loadJourney = async (journeyId: number) => {
+  const loadJourney = useCallback(async (journeyId: number) => {
     setIsLoading(true)
     try {
-      // R1: 使用 Mock 資料
-      await new Promise(resolve => setTimeout(resolve, 300))
+      // Fetch journey details from backend
+      const journeyResponse = await getJourney(journeyId)
 
-      const journey = getJourneyById(journeyId)
-      if (!journey) {
+      if (!journeyResponse.success || !journeyResponse.data) {
+        console.error('Failed to load journey:', journeyResponse.error)
         throw new Error('Journey not found')
       }
 
+      const journey = journeyResponse.data.journey
       setCurrentJourney(journey)
 
-      // 載入用戶進度
+      // Load user progress if logged in
       if (user) {
-        const userProgress = userLessonProgress[user.id] || {}
-        setProgressMap(userProgress)
-      }
+        const progressResponse = await getJourneyProgress(journeyId, user.id)
 
-      // R2 TODO: 從 API 載入
-      // const [journeyRes, progressRes] = await Promise.all([
-      //   fetch(`/api/journeys/${journeyId}`),
-      //   fetch(`/api/journeys/${journeyId}/progress`),
-      // ])
-      // const journey = await journeyRes.json()
-      // const progress = await progressRes.json()
-      // setCurrentJourney(journey)
-      // setProgressMap(progress)
+        if (progressResponse.success && progressResponse.data) {
+          setProgressMap(progressResponse.data.progress)
+        } else {
+          // No progress data, start fresh
+          setProgressMap({})
+        }
+      } else {
+        setProgressMap({})
+      }
     } catch (error) {
       console.error('Failed to load journey:', error)
+      setCurrentJourney(null)
+      setProgressMap({})
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [user])
 
   /**
    * 更新課程進度
+   * Note: Backend progress API not yet fully implemented
+   * This is a placeholder for future implementation
    */
   const updateProgress = async (
     lessonId: number,
@@ -132,19 +150,20 @@ export function JourneyProvider({ children }: { children: ReactNode }) {
     if (!user) return
 
     try {
-      // R1: 更新 Mock 資料
-      const updated = updateLessonProgress(user.id, lessonId, progressUpdate)
-
-      setProgressMap(prev => ({
+      // Update local state immediately for better UX
+      setProgressMap((prev) => ({
         ...prev,
-        [lessonId]: updated,
+        [lessonId]: {
+          ...(prev[lessonId] || { completed: false, progress: 0 }),
+          ...progressUpdate,
+        },
       }))
 
-      // R2 TODO: 同步到後端
-      // await fetch(`/api/lessons/${lessonId}/progress`, {
-      //   method: 'PATCH',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(progressUpdate),
+      // TODO: Sync to backend when progress update API is ready
+      // await apiClient.post('/progress/update', {
+      //   lessonId,
+      //   position: progressUpdate.currentPosition || 0,
+      //   duration: progressUpdate.videoDuration || 0,
       // })
     } catch (error) {
       console.error('Failed to update progress:', error)
@@ -154,30 +173,33 @@ export function JourneyProvider({ children }: { children: ReactNode }) {
 
   /**
    * 繳交單元
+   * Note: Backend submit API not yet fully implemented
+   * This is a placeholder for future implementation
    */
   const submitLesson = async (lessonId: number) => {
     if (!user) return
 
     try {
-      // R1: Mock 繳交邏輯
-      await new Promise(resolve => setTimeout(resolve, 500))
+      // Mark as submitted locally
+      const result: LessonProgress = {
+        ...(progressMap[lessonId] || { completed: false, progress: 0 }),
+        completed: true,
+        progress: 100,
+        submittedAt: Date.now(),
+      }
 
-      const result = deliverLesson(user.id, lessonId)
-
-      setProgressMap(prev => ({
+      setProgressMap((prev) => ({
         ...prev,
         [lessonId]: result,
       }))
 
-      // R2 TODO: 呼叫繳交 API
-      // const response = await fetch(`/api/lessons/${lessonId}/submit`, {
-      //   method: 'POST',
+      // TODO: Call backend submit API when ready
+      // const response = await apiClient.post('/progress/submit', {
+      //   lessonId,
       // })
-      // const data = await response.json()
-      // setProgressMap(prev => ({
-      //   ...prev,
-      //   [lessonId]: data.progress,
-      // }))
+      // if (response.success && response.data) {
+      //   // Update user experience points, etc.
+      // }
 
       return result
     } catch (error) {
@@ -188,41 +210,37 @@ export function JourneyProvider({ children }: { children: ReactNode }) {
 
   /**
    * 解鎖章節
+   * Note: Chapter system not yet implemented in backend
+   * This is a placeholder for future implementation
    */
   const unlockChapter = async (chapterId: number, password: string): Promise<boolean> => {
     if (!currentJourney) return false
 
     try {
-      // R1: Mock 解鎖邏輯
-      await new Promise(resolve => setTimeout(resolve, 300))
-
-      const chapter = currentJourney.chapters.find(c => c.id === chapterId)
+      const chapter = currentJourney.chapters.find((c) => c.id === chapterId)
       if (!chapter) return false
 
-      // 檢查密碼
+      // Check password locally (backend doesn't have chapter system yet)
       const isCorrect = chapter.password === password
 
       if (isCorrect) {
-        // 更新章節狀態
-        setCurrentJourney(prev => {
+        // Update chapter state locally
+        setCurrentJourney((prev) => {
           if (!prev) return null
           return {
             ...prev,
-            chapters: prev.chapters.map(c =>
+            chapters: prev.chapters.map((c) =>
               c.id === chapterId ? { ...c, locked: false } : c
             ),
           }
         })
       }
 
-      // R2 TODO: 呼叫解鎖 API
-      // const response = await fetch(`/api/chapters/${chapterId}/unlock`, {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ password }),
+      // TODO: Call backend unlock API when chapter system is implemented
+      // const response = await apiClient.post(`/chapters/${chapterId}/unlock`, {
+      //   password,
       // })
-      // const data = await response.json()
-      // return data.success
+      // return response.success
 
       return isCorrect
     } catch (error) {
@@ -233,10 +251,11 @@ export function JourneyProvider({ children }: { children: ReactNode }) {
 
   /**
    * 檢查課程存取權限
+   * Based on: free courses + purchased courses
    */
   const checkAccess = (journeyId: number): boolean => {
-    if (!user) return false
-    return hasJourneyAccess(user.id, journeyId)
+    // Check if course is in ownedJourneys list
+    return ownedJourneys.some((journey) => journey.id === journeyId)
   }
 
   // 初始化：載入所有課程
@@ -244,26 +263,29 @@ export function JourneyProvider({ children }: { children: ReactNode }) {
     loadJourneys()
   }, [])
 
-  // 當用戶登入狀態改變時，重新載入擁有的課程
+  // 當用戶登入狀態改變時，重新載入課程（以獲取最新的購買狀態）
   useEffect(() => {
-    if (allJourneys.length > 0) {
-      if (user) {
-        const owned = allJourneys.filter(journey => hasJourneyAccess(user.id, journey.id))
-        setOwnedJourneys(owned)
-      } else {
-        setOwnedJourneys([])
-      }
+    if (user) {
+      // Reload journeys to update owned courses based on purchases
+      loadJourneys()
+    } else {
+      // User logged out, show only free courses
+      const freeCourses = allJourneys.filter((journey) => !journey.isPremium)
+      setOwnedJourneys(freeCourses)
     }
-  }, [user, allJourneys])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user])
 
   const value: JourneyContextType = {
     journeys: allJourneys,
     currentJourney,
+    selectedJourney,
     ownedJourneys,
     progressMap,
     isLoading,
     loadJourney,
     loadJourneys,
+    setSelectedJourney,
     updateProgress,
     submitLesson,
     unlockChapter,

@@ -21,3 +21,6 @@ export * from './users'
 
 // Leaderboard API
 export * from './leaderboard'
+
+// Purchases API
+export * from './purchases'

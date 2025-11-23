@@ -10,14 +10,8 @@ import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { ChevronDown, Bell, Map, LogIn, Menu } from 'lucide-react'
-import { useAuth } from '@/contexts'
+import { useAuth, useJourney } from '@/contexts'
 import { cn } from '@/lib/utils'
-
-// Mock journeys data - replace with actual data from context
-const mockJourneys = [
-  { id: 1, name: '軟體設計模式精通之旅', slug: 'software-design-pattern' },
-  { id: 4, name: 'AI x BDD：規格驅動全自動開發術', slug: 'ai-bdd' },
-]
 
 // Mock notifications - replace with actual data
 const mockNotifications = [
@@ -30,10 +24,10 @@ interface HeaderProps {
 
 export default function Header({ onMobileMenuClick }: HeaderProps) {
   const { user, isAuthenticated, logout } = useAuth()
+  const { journeys, selectedJourney, setSelectedJourney } = useJourney()
   const [showCourseDropdown, setShowCourseDropdown] = useState(false)
   const [showNotifications, setShowNotifications] = useState(false)
   const [showUserMenu, setShowUserMenu] = useState(false)
-  const [selectedJourney, setSelectedJourney] = useState(mockJourneys[0])
 
   const courseDropdownRef = useRef<HTMLDivElement>(null)
   const notificationRef = useRef<HTMLDivElement>(null)
@@ -85,14 +79,16 @@ export default function Header({ onMobileMenuClick }: HeaderProps) {
                 onClick={() => setShowCourseDropdown(!showCourseDropdown)}
                 className="flex items-center gap-2 px-4 py-2 bg-[#1A1D2E]/50 border border-gray-600 rounded-lg hover:bg-[#1A1D2E] transition-colors min-w-[280px]"
               >
-                <span className="text-white text-sm truncate">{selectedJourney.name}</span>
+                <span className="text-white text-sm truncate">
+                  {selectedJourney?.name || journeys[0]?.name || '選擇課程'}
+                </span>
                 <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0" />
               </button>
 
               {/* Course Dropdown */}
               {showCourseDropdown && (
                 <div className="absolute top-full left-0 mt-2 w-full bg-[#1A1D2E] border border-gray-700 rounded-lg shadow-xl overflow-hidden">
-                  {mockJourneys.map((journey) => (
+                  {journeys.map((journey) => (
                     <button
                       key={journey.id}
                       onClick={() => {
@@ -101,7 +97,7 @@ export default function Header({ onMobileMenuClick }: HeaderProps) {
                       }}
                       className={cn(
                         'w-full px-4 py-3 text-left text-sm hover:bg-[#2D3142] transition-colors',
-                        journey.id === selectedJourney.id
+                        journey.id === selectedJourney?.id
                           ? 'bg-[#2D3142] text-white font-medium'
                           : 'text-gray-300'
                       )}
@@ -121,7 +117,7 @@ export default function Header({ onMobileMenuClick }: HeaderProps) {
             <>
               {/* Challenge Map Button */}
               <Link
-                href={`/journeys/${selectedJourney.slug}/roadmap`}
+                href={`/journeys/${selectedJourney?.id || journeys[0]?.id || 1}/roadmap`}
                 className="hidden md:flex items-center gap-2 px-4 py-2 border-2 border-primary rounded-lg text-primary font-medium hover:bg-primary/10 transition-colors"
               >
                 <Map className="w-4 h-4" />
