@@ -11,11 +11,11 @@ import { UserDTO } from '@/types/backend'
 
 /**
  * 獲取當前用戶資訊
- * GET /api/users/me
+ * GET /api/auth/me
  */
 export async function getCurrentUser(): Promise<GetUserResponse> {
   try {
-    const response = await apiClient.get<UserDTO>('/users/me')
+    const response = await apiClient.get<UserDTO>('/auth/me')
     // Cast to any to bypass type checking - backend returns UserDTO which needs transformation
     // The AuthContext will handle the transformation from UserDTO to User
     return response as any
@@ -45,14 +45,14 @@ export async function getUser(userId: string): Promise<GetUserResponse> {
 
 /**
  * 更新用戶資訊
- * PATCH /api/users/me
+ * PATCH /api/auth/me
  */
 export async function updateUser(
   userId: string,
   updates: UpdateUserRequest
 ): Promise<UpdateUserResponse> {
   try {
-    const response = await apiClient.patch<UserDTO>('/users/me', updates)
+    const response = await apiClient.patch<UserDTO>('/auth/me', updates)
     // Cast to any to bypass type checking - backend returns UserDTO which needs transformation
     return response as any
   } catch (error) {

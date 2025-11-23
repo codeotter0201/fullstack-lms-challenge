@@ -16,6 +16,30 @@ import { getLesson } from '@/lib/api/lessons'
 import { Lesson } from '@/types/journey'
 import { BookOpen, CheckCircle, Award, ChevronLeft, ChevronRight, Lock } from 'lucide-react'
 
+// Extract YouTube video ID from URL
+function extractYouTubeId(url: string | null): string | null {
+  if (!url) return null
+
+  // If it's already just an ID (no slashes or query params), return it
+  if (!url.includes('/') && !url.includes('?')) {
+    return url
+  }
+
+  // Handle youtube.com/watch?v=VIDEO_ID
+  const watchMatch = url.match(/[?&]v=([^&]+)/)
+  if (watchMatch) return watchMatch[1]
+
+  // Handle youtu.be/VIDEO_ID
+  const shortMatch = url.match(/youtu\.be\/([^?]+)/)
+  if (shortMatch) return shortMatch[1]
+
+  // Handle youtube.com/embed/VIDEO_ID
+  const embedMatch = url.match(/\/embed\/([^?]+)/)
+  if (embedMatch) return embedMatch[1]
+
+  return null
+}
+
 export default function LessonPage() {
   const params = useParams()
   const router = useRouter()
@@ -258,11 +282,23 @@ export default function LessonPage() {
             <div className="flex-1">
               {/* 影片 */}
               <Card className="overflow-hidden mb-6">
-                <VideoPlayer
-                  videoId={lesson.videoUrl || ''}
-                  onProgress={handleVideoProgress}
-                  onComplete={handleVideoComplete}
-                />
+                {(() => {
+                  const videoId = extractYouTubeId(lesson.videoUrl || null)
+                  return videoId ? (
+                    <VideoPlayer
+                      videoId={videoId}
+                      onProgress={handleVideoProgress}
+                      onComplete={handleVideoComplete}
+                    />
+                  ) : (
+                    <div className="aspect-video flex items-center justify-center bg-gray-900">
+                      <div className="text-center text-white p-8">
+                        <p className="text-lg font-medium mb-2">影片載入失敗</p>
+                        <p className="text-sm text-gray-400">此課程影片暫時無法使用</p>
+                      </div>
+                    </div>
+                  )
+                })()}
               </Card>
 
               {/* 單元資訊 */}

@@ -62,6 +62,7 @@ export default function VideoPlayer({
 
     // 檢查 API 是否已載入
     if (window.YT && window.YT.Player) {
+      // Still need to call initializePlayer which has its own validation
       initializePlayer()
       return
     }
@@ -70,7 +71,10 @@ export default function VideoPlayer({
     const existingScript = document.querySelector('script[src*="youtube.com/iframe_api"]')
     if (existingScript) {
       // Script 正在載入，等待 onYouTubeIframeAPIReady
-      window.onYouTubeIframeAPIReady = initializePlayer
+      // Wrap in arrow function to capture current videoId
+      window.onYouTubeIframeAPIReady = () => {
+        initializePlayer()
+      }
       return
     }
 
@@ -81,7 +85,10 @@ export default function VideoPlayer({
     document.head.appendChild(tag)
 
     // 設置 API 就緒回調
-    window.onYouTubeIframeAPIReady = initializePlayer
+    // Wrap in arrow function to capture current videoId
+    window.onYouTubeIframeAPIReady = () => {
+      initializePlayer()
+    }
 
     return () => {
       // 清理
@@ -96,8 +103,10 @@ export default function VideoPlayer({
     if (!playerContainerRef.current) return
 
     // Validate videoId before initializing
-    if (!videoId || videoId.trim() === '') {
-      console.error('Invalid or empty video ID:', videoId)
+    // Check both current prop and ref to ensure we have a valid ID
+    const currentVideoId = videoId
+    if (!currentVideoId || currentVideoId.trim() === '') {
+      console.error('Invalid or empty video ID:', currentVideoId)
       setError('影片 ID 無效')
       setIsLoading(false)
       return
@@ -107,7 +116,7 @@ export default function VideoPlayer({
       playerRef.current = new window.YT.Player(playerContainerRef.current, {
         height: '100%',
         width: '100%',
-        videoId: videoId,
+        videoId: currentVideoId,
         playerVars: {
           autoplay: autoplay ? 1 : 0,
           controls: 1,
@@ -192,6 +201,12 @@ export default function VideoPlayer({
   const reportProgress = () => {
     if (!playerRef.current || !onProgress) return
 
+    // 檢查 player 方法是否可用
+    if (typeof playerRef.current.getCurrentTime !== 'function' ||
+        typeof playerRef.current.getDuration !== 'function') {
+      return
+    }
+
     try {
       const currentTime = playerRef.current.getCurrentTime()
       const duration = playerRef.current.getDuration()
@@ -237,8 +252,8 @@ export default function VideoPlayer({
   // 影片結束（播放到最後）
   const handleVideoEnded = () => {
     // 最後報告一次 100% 進度
-    if (onProgress) {
-      const duration = playerRef.current?.getDuration()
+    if (onProgress && playerRef.current && typeof playerRef.current.getDuration === 'function') {
+      const duration = playerRef.current.getDuration()
       if (duration) {
         onProgress({
           currentTime: Math.floor(duration),
