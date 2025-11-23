@@ -49,10 +49,18 @@ COPY --from=deps /app/node_modules ./node_modules
 # 複製應用程式原始碼
 COPY . .
 
+# 接收 build arguments
+ARG NEXT_PUBLIC_API_BASE_URL
+ARG NEXT_PUBLIC_ENV
+ARG NEXT_PUBLIC_USE_REAL_API
+
 # 設定環境變數（建置時需要）
 # 注意：這些變數會在建置時被嵌入，不應包含敏感資訊
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
+ENV NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL}
+ENV NEXT_PUBLIC_ENV=${NEXT_PUBLIC_ENV}
+ENV NEXT_PUBLIC_USE_REAL_API=${NEXT_PUBLIC_USE_REAL_API}
 
 # 建置 Next.js 應用程式
 # Next.js 會自動產生 standalone 輸出（如果 next.config.js 有設定）
