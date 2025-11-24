@@ -41,8 +41,12 @@ export async function logout(page: Page) {
   // Clear authentication cookies and local storage
   await page.context().clearCookies();
   await page.evaluate(() => {
-    localStorage.clear();
-    sessionStorage.clear();
+    try {
+      localStorage.clear();
+      sessionStorage.clear();
+    } catch (e) {
+      // Ignore SecurityError when localStorage is not accessible
+    }
   });
   await page.goto('/sign-in');
 }
@@ -51,23 +55,45 @@ export async function clearAuth(page: Page) {
   // Clear all authentication data without navigation
   await page.context().clearCookies();
   await page.evaluate(() => {
-    localStorage.removeItem('accessToken');
-    sessionStorage.clear();
+    try {
+      localStorage.removeItem('accessToken');
+      sessionStorage.clear();
+    } catch (e) {
+      // Ignore SecurityError when localStorage is not accessible (e.g., on about:blank)
+    }
   });
 }
 
 export async function isAuthenticated(page: Page): Promise<boolean> {
   // Check if auth token exists in localStorage or cookies
-  const token = await page.evaluate(() => localStorage.getItem('authToken') || sessionStorage.getItem('authToken'));
+  const token = await page.evaluate(() => {
+    try {
+      return localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+    } catch (e) {
+      return null;
+    }
+  });
   return !!token;
 }
 
 export async function getAuthToken(page: Page): Promise<string | null> {
-  return await page.evaluate(() => localStorage.getItem('authToken') || sessionStorage.getItem('authToken'));
+  return await page.evaluate(() => {
+    try {
+      return localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+    } catch (e) {
+      return null;
+    }
+  });
 }
 
 export async function setAuthToken(page: Page, token: string) {
-  await page.evaluate((token) => localStorage.setItem('authToken', token), token);
+  await page.evaluate((token) => {
+    try {
+      localStorage.setItem('authToken', token);
+    } catch (e) {
+      // Ignore SecurityError when localStorage is not accessible
+    }
+  }, token);
 }
 
 export async function createAuthenticatedContext(page: Page, userType: keyof typeof testUsers) {
