@@ -17,7 +17,7 @@ import type { CourseDTO, LessonDTO } from '@/types/backend'
 // Journey progress response type
 type GetJourneyProgressResponse = ApiResponse<{
   journeyId: number
-  progress: Record<string, { completed: boolean; progress: number }>
+  progress: Record<string, { completed: boolean; progress: number; submitted: boolean }>
   completedLessons: number
   totalLessons: number
 }>
@@ -142,13 +142,14 @@ export async function getJourneyProgress(
     }
 
     // Build progress map from lessons
-    const progress: Record<string, { completed: boolean; progress: number }> = {}
+    const progress: Record<string, { completed: boolean; progress: number; submitted: boolean }> = {}
     let completedCount = 0
 
     response.data.forEach((lesson) => {
       progress[lesson.id.toString()] = {
         completed: lesson.isCompleted,
         progress: lesson.progressPercentage,
+        submitted: lesson.isSubmitted,
       }
       if (lesson.isCompleted) {
         completedCount++

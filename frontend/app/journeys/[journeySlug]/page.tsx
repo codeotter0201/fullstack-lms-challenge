@@ -24,32 +24,52 @@ export default function JourneyDetailPage() {
   const router = useRouter()
   const { user, isAuthenticated } = useAuth()
   const { showToast } = useToast()
-  const { currentJourney, progressMap, loadJourney, checkAccess, isLoading, setSelectedJourney, journeys } = useJourney()
+  const { currentJourney, progressMap, loadJourney, checkAccess, isLoading, setSelectedJourney, selectedJourney, journeys } = useJourney()
   const [activeChapterId, setActiveChapterId] = useState<string | null>(null)
 
   const journeySlug = params.journeySlug as string
 
-  useEffect(() => {
-    // Parse journey ID - can be either numeric ID or slug
-    let journeyId: number
+  // Helper function to parse journey ID from URL slug
+  const parseJourneySlug = (slug: string): number => {
+    if (!isNaN(Number(slug))) {
+      return Number(slug)
+    }
+    // Handle slug (legacy support)
+    return slug === 'software-design-pattern' ? 1 : 2
+  }
 
-    // Check if journeySlug is a number
-    if (!isNaN(Number(journeySlug))) {
-      journeyId = Number(journeySlug)
-    } else {
-      // Handle slug (legacy support)
-      journeyId = journeySlug === 'software-design-pattern' ? 1 : 2
+  // React to selectedJourney context changes (primary) or URL param (fallback)
+  useEffect(() => {
+    let journeyIdToLoad: number | null = null
+
+    if (selectedJourney?.id) {
+      // Primary: Use selectedJourney from context
+      journeyIdToLoad = selectedJourney.id
+
+      // Update URL without navigation (for shareability)
+      if (typeof window !== 'undefined') {
+        const newPath = `/journeys/${selectedJourney.slug || selectedJourney.id}`
+        if (window.location.pathname !== newPath) {
+          window.history.replaceState(null, '', newPath)
+        }
+      }
+    } else if (journeySlug) {
+      // Fallback: Parse from URL param (direct URL access)
+      journeyIdToLoad = parseJourneySlug(journeySlug)
     }
 
-    loadJourney(journeyId)
-  }, [journeySlug, loadJourney])
+    // Avoid redundant loading
+    if (journeyIdToLoad && currentJourney?.id !== journeyIdToLoad) {
+      loadJourney(journeyIdToLoad)
+    }
+  }, [selectedJourney, journeySlug, loadJourney, currentJourney?.id])
 
-  // Update selectedJourney when currentJourney loads
+  // Update selectedJourney when currentJourney loads (for initial page load via URL)
   useEffect(() => {
-    if (currentJourney) {
+    if (currentJourney && !selectedJourney) {
       setSelectedJourney(currentJourney)
     }
-  }, [currentJourney, setSelectedJourney])
+  }, [currentJourney, selectedJourney, setSelectedJourney])
 
   if (isLoading) {
     return (

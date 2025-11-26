@@ -16,6 +16,7 @@ export type ButtonVariant =
   | 'ghost'        // 幽靈按鈕 (透明背景)
   | 'danger'       // 危險按鈕 (紅色)
   | 'success'      // 成功按鈕 (綠色)
+  | 'warning'      // 警告按鈕 (黃色)
 
 /**
  * 按鈕尺寸
@@ -37,6 +38,7 @@ export interface ButtonProps {
   type?: 'button' | 'submit' | 'reset'
   className?: string
   children: ReactNode
+  'data-testid'?: string  // E2E 測試用
 }
 
 /**
@@ -174,6 +176,7 @@ export interface DropdownItem {
   danger?: boolean
   divider?: boolean       // 是否顯示分隔線
   onClick?: () => void
+  testId?: string         // E2E 測試用的 data-testid
 }
 
 /**

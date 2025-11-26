@@ -111,7 +111,8 @@ export default function LessonPage() {
   }, [lessonId, authLoading, journeyId, router])
 
   const progress = progressMap[lessonId]
-  const isCompleted = progress?.completed || false
+  const isCompleted = progress?.completed || false      // 影片看完
+  const isDelivered = progress?.delivered || false      // 已繳交
 
   // 找出上一個和下一個單元 - memoize to avoid recalculation
   const { prev, next } = React.useMemo(() => {
@@ -309,12 +310,17 @@ export default function LessonPage() {
                     <h1 className="text-3xl font-bold mb-2">{lesson.name}</h1>
                     <p className="text-gray-600">{lesson.description}</p>
                   </div>
-                  {isCompleted && (
-                    <Badge variant="success" size="lg" className="gap-2">
+                  {isDelivered ? (
+                    <Badge data-testid="submitted-badge" variant="success" size="lg" className="gap-2">
                       <CheckCircle className="w-5 h-5" />
-                      已完成
+                      已繳交
                     </Badge>
-                  )}
+                  ) : isCompleted ? (
+                    <Badge data-testid="can-submit-badge" variant="warning" size="lg" className="gap-2">
+                      <CheckCircle className="w-5 h-5" />
+                      可繳交
+                    </Badge>
+                  ) : null}
                 </div>
 
                 {/* 獎勵資訊 */}
@@ -348,14 +354,15 @@ export default function LessonPage() {
                 )}
 
                 <Button
-                  variant={isCompleted ? 'success' : 'primary'}
+                  data-testid="submit-lesson-button"
+                  variant={isDelivered ? 'success' : isCompleted ? 'warning' : 'primary'}
                   onClick={handleSubmit}
                   loading={isSubmitting}
-                  disabled={isCompleted}
+                  disabled={isDelivered || !isCompleted}
                   icon={<CheckCircle className="w-5 h-5" />}
                   className="flex-1"
                 >
-                  {isCompleted ? '已繳交' : '繳交單元'}
+                  {isDelivered ? '已繳交' : isCompleted ? '繳交單元' : '請先看完影片'}
                 </Button>
 
                 {next && (

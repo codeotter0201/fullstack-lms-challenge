@@ -34,6 +34,7 @@ export default function Navbar() {
     {
       key: 'all-courses',
       label: '所有課程',
+      testId: 'navbar-all-courses',
       onClick: () => {
         setSelectedJourney(null)
         router.push('/journeys')
@@ -51,9 +52,14 @@ export default function Navbar() {
     ...journeys.map((journey) => ({
       key: `course-${journey.id}`,
       label: journey.name,
+      testId: `navbar-course-option-${journey.id}`,
       onClick: () => {
         setSelectedJourney(journey)
-        router.push(`/journeys/${journey.id}`)
+        // Only navigate if on lesson page, otherwise context change triggers re-render
+        const isOnLessonPage = pathname.includes('/chapters/') && pathname.includes('/missions/')
+        if (isOnLessonPage) {
+          router.push(`/journeys/${journey.slug || journey.id}`)
+        }
       },
     })),
   ]
@@ -116,6 +122,7 @@ export default function Navbar() {
               {/* 課程下拉選單 */}
               <Dropdown items={courseMenuItems} placement="bottom-start">
                 <button
+                  data-testid="navbar-course-dropdown"
                   className={cn(
                     'flex items-center gap-1 px-4 py-2 rounded-lg',
                     'font-medium text-sm',
@@ -182,6 +189,7 @@ export default function Navbar() {
 
           {/* 行動版選單按鈕 */}
           <button
+            data-testid="navbar-mobile-menu-button"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             className="md:hidden p-2 rounded-lg text-gray-600 hover:bg-gray-100"
           >
@@ -261,15 +269,20 @@ export default function Navbar() {
                 所有課程
               </Link>
               {journeys.map((journey) => (
-                <Link
+                <button
                   key={journey.id}
-                  href={`/journeys/${journey.id}`}
+                  data-testid={`navbar-mobile-course-${journey.id}`}
                   onClick={() => {
                     setSelectedJourney(journey)
                     setMobileMenuOpen(false)
+                    // Only navigate if on lesson page
+                    const isOnLessonPage = pathname.includes('/chapters/') && pathname.includes('/missions/')
+                    if (isOnLessonPage) {
+                      router.push(`/journeys/${journey.slug || journey.id}`)
+                    }
                   }}
                   className={cn(
-                    'block px-4 py-3 rounded-lg',
+                    'block w-full text-left px-4 py-3 rounded-lg',
                     'font-medium text-sm',
                     'transition-colors duration-200',
                     selectedJourney?.id === journey.id
@@ -278,7 +291,7 @@ export default function Navbar() {
                   )}
                 >
                   {journey.name}
-                </Link>
+                </button>
               ))}
             </div>
 

@@ -17,6 +17,7 @@ const variantStyles = {
   ghost: 'text-text-primary hover:bg-background-secondary',
   danger: 'bg-status-error hover:bg-red-600 text-white shadow-sm hover:shadow-md',
   success: 'bg-status-success hover:bg-green-600 text-white shadow-sm hover:shadow-md',
+  warning: 'bg-yellow-500 hover:bg-yellow-600 text-[rgb(23,25,35)] shadow-sm hover:shadow-md',
 }
 
 const sizeStyles = {
@@ -38,6 +39,7 @@ export default function Button({
   type = 'button',
   className,
   children,
+  'data-testid': testId,
 }: ButtonProps) {
   const isDisabled = disabled || loading
 
@@ -46,6 +48,7 @@ export default function Button({
       type={type}
       disabled={isDisabled}
       onClick={onClick}
+      data-testid={testId}
       className={cn(
         // 基礎樣式
         'inline-flex items-center justify-center gap-2',

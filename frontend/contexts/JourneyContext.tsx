@@ -132,7 +132,7 @@ export function JourneyProvider({ children }: { children: ReactNode }) {
               duration: 0,
               percentage: value.progress,
               completed: value.completed,
-              delivered: false,
+              delivered: value.submitted || false,  // 從後端取得 isSubmitted
               lastUpdated: Date.now(),
             }
           })
@@ -192,6 +192,7 @@ export function JourneyProvider({ children }: { children: ReactNode }) {
               ...prev[lessonId],
               completed: response.data!.isCompleted,
               percentage: response.data!.progressPercentage,
+              delivered: response.data!.isSubmitted || false,  // 保持 delivered 狀態同步
             },
           }))
         } else {

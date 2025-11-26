@@ -104,6 +104,7 @@ export default function Dropdown({
                 <button
                   onClick={() => handleItemClick(item)}
                   disabled={item.disabled}
+                  data-testid={item.testId}
                   className={cn(
                     'w-full px-4 py-2',
                     'flex items-center gap-3',
