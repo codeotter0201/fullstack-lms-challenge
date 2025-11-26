@@ -17,6 +17,7 @@ export interface CourseDTO {
   isPremium: boolean
   totalLessons: number
   displayOrder: number
+  price?: number
 }
 
 /**

@@ -28,6 +28,7 @@ export default function Badge({
   rounded = false,
   className,
   children,
+  ...rest
 }: BadgeProps) {
   return (
     <span
@@ -49,6 +50,7 @@ export default function Badge({
         // 自訂樣式
         className
       )}
+      {...rest}
     >
       {children}
     </span>

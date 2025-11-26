@@ -11,6 +11,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { Button } from '@/components/ui'
 import { cn } from '@/lib/utils'
+import { useJourney } from '@/contexts'
 
 interface FeaturedCourse {
   id: number
@@ -37,10 +38,15 @@ export default function FeaturedCourses({
   courses = [],
   className,
 }: FeaturedCoursesProps) {
-  // 移除空數組檢查，即使沒有課程也顯示佔位符
-  // if (courses.length === 0) {
-  //   return null
-  // }
+  const { journeys, setSelectedJourney } = useJourney()
+
+  // 點擊課程卡片時更新 selectedJourney
+  const handleCourseClick = (courseSlug: string) => {
+    const journey = journeys.find(j => j.slug === courseSlug || String(j.id) === courseSlug)
+    if (journey) {
+      setSelectedJourney(journey)
+    }
+  }
 
   return (
     <div className={cn('space-y-8', className)}>
@@ -65,8 +71,10 @@ export default function FeaturedCourses({
             : '看完課程介紹，立刻折價 500 元'
 
           return (
-            <div
+            <Link
               key={course.id}
+              href={`/journeys/${course.slug}`}
+              onClick={() => handleCourseClick(course.slug)}
               className={cn(
                 'border-2 border-primary rounded-md overflow-hidden',
                 'bg-background-secondary',
@@ -120,18 +128,16 @@ export default function FeaturedCourses({
                   </div>
 
                   {/* CTA 按鈕 */}
-                  <Link href={`/journeys/${course.slug}`}>
-                    <Button
-                      variant="primary"
-                      size="lg"
-                      className="w-full"
-                    >
-                      {isOwned ? '立刻體驗' : isPremium ? '立刻購買' : '立刻體驗'}
-                    </Button>
-                  </Link>
+                  <Button
+                    variant="primary"
+                    size="lg"
+                    className="w-full"
+                  >
+                    {isOwned ? '立刻體驗' : isPremium ? '立刻購買' : '立刻體驗'}
+                  </Button>
                 </div>
               </div>
-            </div>
+            </Link>
           )
         })}
       </div>

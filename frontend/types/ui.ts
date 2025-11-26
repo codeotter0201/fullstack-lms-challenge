@@ -82,7 +82,7 @@ export type BadgeSize = 'sm' | 'md' | 'lg'
 /**
  * 徽章 Props
  */
-export interface BadgeProps {
+export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
   variant?: BadgeVariant
   size?: BadgeSize
   rounded?: boolean        // 是否為圓形

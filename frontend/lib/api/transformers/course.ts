@@ -33,6 +33,7 @@ export function transformCourseToJourney(
     author: 'Waterball Academy', // Backend doesn't provide, use default
     videoCount: course.totalLessons, // totalLessons → videoCount
     isPremium: course.isPremium,
+    price: course.price,
     hasDiscount: false, // Backend doesn't provide discount info
     discountAmount: undefined,
   }

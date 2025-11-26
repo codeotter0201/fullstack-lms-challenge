@@ -9,6 +9,7 @@
 import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
+import { useRouter, usePathname } from 'next/navigation'
 import { ChevronDown, Bell, Map, LogIn, Menu } from 'lucide-react'
 import { useAuth, useJourney } from '@/contexts'
 import { cn } from '@/lib/utils'
@@ -23,6 +24,8 @@ interface HeaderProps {
 }
 
 export default function Header({ onMobileMenuClick }: HeaderProps) {
+  const router = useRouter()
+  const pathname = usePathname()
   const { user, isAuthenticated, logout } = useAuth()
   const { journeys, selectedJourney, setSelectedJourney } = useJourney()
   const [showCourseDropdown, setShowCourseDropdown] = useState(false)
@@ -66,6 +69,7 @@ export default function Header({ onMobileMenuClick }: HeaderProps) {
           {onMobileMenuClick && (
             <button
               onClick={onMobileMenuClick}
+              data-testid="navbar-mobile-menu-button"
               className="lg:hidden p-2 rounded-md text-white hover:bg-[#1A1D2E] transition-colors"
               aria-label="開啟選單"
             >
@@ -77,6 +81,7 @@ export default function Header({ onMobileMenuClick }: HeaderProps) {
           <div className="relative" ref={courseDropdownRef}>
               <button
                 onClick={() => setShowCourseDropdown(!showCourseDropdown)}
+                data-testid="navbar-course-dropdown"
                 className="flex items-center gap-2 px-4 py-2 bg-[#1A1D2E]/50 border border-gray-600 rounded-lg hover:bg-[#1A1D2E] transition-colors min-w-[280px]"
               >
                 <span className="text-white text-sm truncate">
@@ -91,9 +96,15 @@ export default function Header({ onMobileMenuClick }: HeaderProps) {
                   {journeys.map((journey) => (
                     <button
                       key={journey.id}
+                      data-testid={`navbar-course-option-${journey.id}`}
                       onClick={() => {
                         setSelectedJourney(journey)
                         setShowCourseDropdown(false)
+                        // Navigate to course detail when on a lesson page
+                        const isOnLessonPage = pathname.includes('/chapters/') && pathname.includes('/missions/')
+                        if (isOnLessonPage) {
+                          router.push(`/journeys/${journey.slug || journey.id}`)
+                        }
                       }}
                       className={cn(
                         'w-full px-4 py-3 text-left text-sm hover:bg-[#2D3142] transition-colors',

@@ -20,12 +20,20 @@ import { cn } from '@/lib/utils'
 export default function HomePage() {
   const router = useRouter()
   const { isAuthenticated } = useAuth()
-  const { journeys, loadJourneys } = useJourney()
+  const { journeys, loadJourneys, setSelectedJourney } = useJourney()
   const [selectedCourseIndex, setSelectedCourseIndex] = useState(0)
 
   useEffect(() => {
     loadJourneys()
   }, [loadJourneys])
+
+  // 點擊課程卡片時更新 selectedJourney
+  const handleCourseClick = (courseSlug: string) => {
+    const journey = journeys.find(j => j.slug === courseSlug || String(j.id) === courseSlug)
+    if (journey) {
+      setSelectedJourney(journey)
+    }
+  }
 
   // 轉換課程資料 - 顯示前 2 個課程
   const courses = journeys.slice(0, 2).map((journey, index) => ({
@@ -120,7 +128,10 @@ export default function HomePage() {
                         {course.promotionalText}
                       </p>
                     )}
-                    <Link href={`/journeys/${course.slug}`}>
+                    <Link
+                      href={`/journeys/${course.slug}`}
+                      onClick={() => handleCourseClick(course.slug)}
+                    >
                       <Button
                         variant={course.ctaVariant as 'primary' | 'outline'}
                         className="w-full"
