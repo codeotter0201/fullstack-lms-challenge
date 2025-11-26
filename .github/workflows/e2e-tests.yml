@@ -1,0 +1,152 @@
+name: E2E Tests
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+
+jobs:
+  e2e-tests:
+    name: End-to-End Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: 'e2e/package-lock.json'
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Start test environment
+        run: |
+          cd deploy
+          docker-compose -f docker-compose.e2e.yml up -d
+          docker-compose -f docker-compose.e2e.yml ps
+
+      - name: Wait for backend to be healthy
+        run: |
+          echo "Waiting for backend to be healthy..."
+          timeout 120 bash -c 'until docker-compose -f deploy/docker-compose.e2e.yml ps backend-test | grep -q "healthy"; do echo "Waiting..."; sleep 5; done' || (docker-compose -f deploy/docker-compose.e2e.yml logs backend-test && exit 1)
+          echo "Backend is healthy"
+
+      - name: Wait for frontend to be healthy
+        run: |
+          echo "Waiting for frontend to be healthy..."
+          timeout 120 bash -c 'until docker-compose -f deploy/docker-compose.e2e.yml ps frontend-test | grep -qE "healthy|Up"; do echo "Waiting..."; sleep 5; done' || (docker-compose -f deploy/docker-compose.e2e.yml logs frontend-test && exit 1)
+          echo "Frontend is healthy"
+
+      - name: Show service logs
+        if: always()
+        run: |
+          echo "=== Backend Logs ==="
+          docker-compose -f deploy/docker-compose.e2e.yml logs backend-test | tail -50
+          echo "=== Frontend Logs ==="
+          docker-compose -f deploy/docker-compose.e2e.yml logs frontend-test | tail -50
+
+      - name: Install E2E test dependencies
+        run: |
+          cd e2e
+          npm ci
+
+      - name: Install Playwright browsers
+        run: |
+          cd e2e
+          npx playwright install --with-deps chromium
+
+      - name: Run E2E tests
+        env:
+          TEST_ENV: ci
+          BASE_URL: http://localhost:3001
+          API_URL: http://localhost:8081
+        run: |
+          cd e2e
+          npx playwright test --project=chromium
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: e2e/playwright-report/
+          retention-days: 7
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: e2e/test-results/
+          retention-days: 7
+
+      - name: Upload test videos
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-videos
+          path: e2e/test-results/**/*.webm
+          retention-days: 7
+
+      - name: Cleanup
+        if: always()
+        run: |
+          cd deploy
+          docker-compose -f docker-compose.e2e.yml down -v
+
+      - name: Comment PR with test results
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+
+            let comment = '## 🧪 E2E Test Results\n\n';
+
+            try {
+              const resultsPath = path.join(process.env.GITHUB_WORKSPACE, 'e2e/test-results/results.json');
+              if (fs.existsSync(resultsPath)) {
+                const results = JSON.parse(fs.readFileSync(resultsPath, 'utf8'));
+                const stats = results.stats;
+
+                comment += `- ✅ Passed: ${stats.expected || 0}\n`;
+                comment += `- ❌ Failed: ${stats.unexpected || 0}\n`;
+                comment += `- ⏭️ Skipped: ${stats.skipped || 0}\n`;
+                comment += `- ⏱️ Duration: ${Math.round(stats.duration / 1000)}s\n\n`;
+
+                if (stats.unexpected > 0) {
+                  comment += '### Failed Tests\n\n';
+                  results.suites.forEach(suite => {
+                    suite.specs.forEach(spec => {
+                      spec.tests.forEach(test => {
+                        if (test.status === 'unexpected') {
+                          comment += `- ❌ ${spec.title}\n`;
+                        }
+                      });
+                    });
+                  });
+                }
+              } else {
+                comment += '⚠️ Test results not found.\n';
+              }
+            } catch (error) {
+              comment += `⚠️ Error reading test results: ${error.message}\n`;
+            }
+
+            comment += '\n📊 [View full report in artifacts](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})';
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
