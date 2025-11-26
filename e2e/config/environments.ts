@@ -14,14 +14,14 @@ export interface EnvironmentConfig {
 
 const environments: Record<Environment, EnvironmentConfig> = {
   local: {
-    baseURL: 'http://localhost:3001',
-    apiURL: 'http://localhost:8081',
+    baseURL: process.env.BASE_URL || 'http://localhost:3000',
+    apiURL: process.env.API_URL || 'http://localhost:8080',
     dbConfig: {
-      host: 'localhost',
-      port: 5433,
-      database: 'waterball_lms_test',
-      user: 'test_user',
-      password: 'test_password',
+      host: process.env.DB_HOST || 'localhost',
+      port: parseInt(process.env.DB_PORT || '5432'),
+      database: process.env.DB_NAME || 'waterball_lms',
+      user: process.env.DB_USER || 'postgres',
+      password: process.env.DB_PASSWORD || 'postgres',
     },
   },
   ci: {

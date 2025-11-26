@@ -12,6 +12,10 @@ export class VideoPlayerPage extends BasePage {
   readonly xpToast: Locator;
   readonly levelUpNotification: Locator;
 
+  // 新增：繳交狀態相關 Locators
+  readonly canSubmitBadge: Locator;      // 「可繳交」Badge
+  readonly submittedBadge: Locator;       // 「已繳交」Badge
+
   constructor(page: Page) {
     super(page);
 
@@ -26,9 +30,13 @@ export class VideoPlayerPage extends BasePage {
 
     // Completion and rewards selectors
     this.completionBadge = page.locator('[data-testid="completion-badge"], .completion-badge, text=已完成');
-    this.submitButton = page.locator('button[data-testid="submit-lesson"], button:has-text("交付")');
+    this.submitButton = page.locator('[data-testid="submit-lesson-button"], button:has-text("繳交單元"), button:has-text("請先看完影片"), button:has-text("已繳交")');
     this.xpToast = page.locator('[data-testid="xp-toast"], .toast:has-text("EXP")');
     this.levelUpNotification = page.locator('[data-testid="level-up"], .level-up, text=升級');
+
+    // 新增：繳交狀態 Badge selectors
+    this.canSubmitBadge = page.locator('[data-testid="can-submit-badge"]');
+    this.submittedBadge = page.locator('[data-testid="submitted-badge"]');
   }
 
   async goto(lessonId: number) {
@@ -175,5 +183,62 @@ export class VideoPlayerPage extends BasePage {
     });
 
     return responses;
+  }
+
+  /**
+   * 檢查是否為「可繳交」狀態
+   */
+  async isCanSubmit(): Promise<boolean> {
+    return await this.canSubmitBadge.isVisible({ timeout: 3000 }).catch(() => false);
+  }
+
+  /**
+   * 檢查是否為「已繳交」狀態
+   */
+  async isSubmittedState(): Promise<boolean> {
+    return await this.submittedBadge.isVisible({ timeout: 3000 }).catch(() => false);
+  }
+
+  /**
+   * 取得繳交按鈕文字
+   */
+  async getSubmitButtonText(): Promise<string> {
+    try {
+      return await this.submitButton.textContent() || '';
+    } catch {
+      return '';
+    }
+  }
+
+  /**
+   * 檢查繳交按鈕是否 disabled
+   */
+  async isSubmitButtonDisabled(): Promise<boolean> {
+    try {
+      return await this.submitButton.isDisabled();
+    } catch {
+      return true;
+    }
+  }
+
+  /**
+   * 等待「可繳交」狀態出現
+   */
+  async waitForCanSubmit(timeout: number = 10000): Promise<void> {
+    await this.canSubmitBadge.waitFor({ state: 'visible', timeout });
+  }
+
+  /**
+   * 等待「已繳交」狀態出現
+   */
+  async waitForSubmitted(timeout: number = 10000): Promise<void> {
+    await this.submittedBadge.waitFor({ state: 'visible', timeout });
+  }
+
+  /**
+   * 導航到課程單元頁面 (使用實際的 URL 格式)
+   */
+  async gotoLesson(journeyId: number, chapterId: number, lessonId: number) {
+    await this.page.goto(`/journeys/${journeyId}/chapters/${chapterId}/missions/${lessonId}`);
   }
 }

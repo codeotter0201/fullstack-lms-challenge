@@ -10,7 +10,7 @@ export interface TestUser {
 export const testUsers: Record<string, TestUser> = {
   freeUser: {
     email: 'free-user@test.com',
-    password: 'Test123456!',
+    password: 'Test123456',
     displayName: 'Free Test User',
     isPremium: false,
     level: 1,
@@ -18,7 +18,7 @@ export const testUsers: Record<string, TestUser> = {
   },
   paidUser: {
     email: 'paid-user@test.com',
-    password: 'Test123456!',
+    password: 'Test123456',
     displayName: 'Paid Test User',
     isPremium: true,
     level: 5,
@@ -26,7 +26,7 @@ export const testUsers: Record<string, TestUser> = {
   },
   adminUser: {
     email: 'admin@test.com',
-    password: 'Admin123456!',
+    password: 'Admin123456',
     displayName: 'Admin User',
     isPremium: true,
     level: 10,

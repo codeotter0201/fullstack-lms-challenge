@@ -24,6 +24,16 @@ export class LoginPage extends BasePage {
   }
 
   async login(email: string, password: string) {
+    // Wait for AuthContext to finish loading (button becomes enabled)
+    await this.submitButton.waitFor({ state: 'visible', timeout: 10000 });
+    await this.page.waitForFunction(
+      () => {
+        const btn = document.querySelector('button[type="submit"]') as HTMLButtonElement;
+        return btn && !btn.disabled;
+      },
+      { timeout: 10000 }
+    );
+
     await this.emailInput.fill(email);
     await this.passwordInput.fill(password);
     await this.submitButton.click();
@@ -31,7 +41,8 @@ export class LoginPage extends BasePage {
 
   async loginAndWaitForNavigation(email: string, password: string) {
     await this.login(email, password);
-    await this.page.waitForURL(/\/(courses|profile|$)/);
+    // Wait for navigation away from sign-in page (could go to courses, journeys, profile, or home)
+    await this.page.waitForURL(/\/(courses|profile|journeys|$)/, { timeout: 15000 });
   }
 
   async isLoggedIn(): Promise<boolean> {

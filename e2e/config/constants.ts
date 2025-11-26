@@ -30,4 +30,10 @@ export const ROUTES = {
   COURSES: '/courses',
   PROFILE: '/profile',
   LEADERBOARD: '/leaderboard',
+  JOURNEYS: '/journeys',
 } as const;
+
+// Helper functions for dynamic routes
+export const getJourneyDetailRoute = (id: number | string) => `/journeys/${id}`;
+export const getLessonRoute = (journeyId: string | number, chapterId: string | number, missionId: string | number) =>
+  `/journeys/${journeyId}/chapters/${chapterId}/missions/${missionId}`;
